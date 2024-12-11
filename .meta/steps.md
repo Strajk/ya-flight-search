@@ -33,3 +33,11 @@ MANUAL: Disable eslint rules
 - Removed metadata from page.tsx
 
 > npx shadcn@latest add --all
+
+> Implement form validation and error handling:
+- Added React Hook Form with Zod validation
+- Added toast notifications for success and error states
+- Added inline validation feedback with error messages
+- Added proper error handling for API calls
+- Updated validation schema with more descriptive error messages
+- Added validation for return date in round-trip flights
