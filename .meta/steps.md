@@ -32,3 +32,4 @@ MANUAL: Disable eslint rules
 - Kept layout.tsx as a server component with metadata
 - Removed metadata from page.tsx
 
+> npx shadcn@latest add --all
