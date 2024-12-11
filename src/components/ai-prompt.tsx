@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 
+const EXAMPLE_QUESTIONS = [
+  "Find me cheap weekend flights to somewhere warm",
+  "What's the best time to fly to avoid delays?",
+  "Show me flights under €200 with good layover times",
+]
+
 interface AIPromptProps {
   className?: string
   onMessage: (message: string) => void
@@ -21,6 +27,12 @@ export function AIPrompt({ className, onMessage }: AIPromptProps) {
 
     onMessage(input.trim())
     setInput("")
+  }
+
+  const handleExampleClick = (question: string) => {
+    setInput(question)
+    onMessage(question)
+    setIsExpanded(false)
   }
 
   return (
@@ -43,10 +55,18 @@ export function AIPrompt({ className, onMessage }: AIPromptProps) {
             <p className="text-muted-foreground text-sm">
               Try asking:
             </p>
-            <ul className="space-y-1 text-sm">
-              <li>"Find me cheap weekend flights to somewhere warm"</li>
-              <li>"What's the best time to fly to avoid delays?"</li>
-              <li>"Show me flights under €200 with good layover times"</li>
+            <ul className="space-y-1">
+              {EXAMPLE_QUESTIONS.map((question, index) => (
+                <li key={index}>
+                  <button
+                    type="button"
+                    onClick={() => handleExampleClick(question)}
+                    className="hover:bg-accent px-2 py-1.5 rounded-sm w-full text-left text-sm hover:text-accent-foreground transition-colors"
+                  >
+                    "{question}"
+                  </button>
+                </li>
+              ))}
             </ul>
           </div>
         )}

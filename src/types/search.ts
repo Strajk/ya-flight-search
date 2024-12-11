@@ -52,26 +52,48 @@ export const SearchInputSchema = z.object({
 
 export type SearchInput = z.infer<typeof SearchInputSchema>
 
-export const ChatMessageSchema = z.object({
-  role: z.enum(["user", "assistant"]),
-  content: z.string(),
+export interface ChatMessage {
+  role: "user" | "assistant"
+  content: string
+}
+
+export const SearchFormDataSchema = z.object({
+  departurePlace: z.string().min(1, "Please enter a departure location"),
+  returnPlace: z.string().min(1, "Please enter an arrival location"),
+  departureDate: z.string(),
+  returnDate: z.string().nullable().optional(),
 })
 
-export type ChatMessage = z.infer<typeof ChatMessageSchema>
-
-export const FlightResultSchema = z.object({
-  route: z.string(),
-  duration: z.string(),
-  stops: z.number(),
-  price: z.string(),
-})
-
-export type FlightResult = z.infer<typeof FlightResultSchema>
+export type SearchFormData = z.infer<typeof SearchFormDataSchema>
 
 export const SearchStateSchema = z.object({
-  input: SearchInputSchema,
-  chatHistory: z.array(ChatMessageSchema),
-  results: z.array(FlightResultSchema).optional(),
+  sessionId: z.string(),
+  formData: SearchFormDataSchema,
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string()
+  })),
+  trigger: z.enum(["search", "chat"]),
 })
 
-export type SearchState = z.infer<typeof SearchStateSchema> 
+export type SearchState = z.infer<typeof SearchStateSchema>
+
+export const FlightSchema = z.object({
+  id: z.string(),
+  airline: z.string(),
+  flightNumber: z.string(),
+  departureTime: z.string(),
+  arrivalTime: z.string(),
+  price: z.number(),
+  currency: z.string(),
+  duration: z.string(),
+  stops: z.number(),
+})
+
+export type Flight = z.infer<typeof FlightSchema>
+
+export interface SearchResponse {
+  message: string
+  flights?: Flight[]
+  sessionId: string
+} 

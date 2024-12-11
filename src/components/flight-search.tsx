@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, MapPin, Plus, Search, Briefcase, Users, AlertCircle } from "lucide-react"
+import { Calendar, MapPin, Search, Briefcase, Users, AlertCircle } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
@@ -19,14 +19,23 @@ import { SearchResults } from "@/components/search-results"
 import { AIPrompt } from "@/components/ai-prompt"
 import { DatePicker } from "@/components/date-picker"
 import { useSearchFlights } from "@/lib/api"
-import { SearchInput, SearchState, TripType, ChatMessage, SearchInputSchema } from "@/types/search"
+import { SearchFormData, SearchFormDataSchema, ChatMessage, SearchState } from "@/types/search"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
+// Example values matching the API example
+const defaultFormValues: SearchFormData = {
+  departurePlace: "PRG",
+  returnPlace: "LON",
+  departureDate: "2024-03-01",
+  returnDate: "2024-03-01",
+}
+
 export function FlightSearch() {
-  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [showResults, setShowResults] = useState(false)
   const { toast } = useToast()
+  const sessionId = "test123" // In production, this should be generated uniquely
 
   const {
     register,
@@ -35,36 +44,31 @@ export function FlightSearch() {
     setValue,
     watch,
     trigger,
-  } = useForm<SearchInput>({
-    resolver: zodResolver(SearchInputSchema),
-    defaultValues: {
-      tripType: "return",
-      from: "",
-      to: "",
-      passengers: 1,
-      bags: 0,
-    },
+  } = useForm<SearchFormData>({
+    resolver: zodResolver(SearchFormDataSchema),
+    defaultValues: defaultFormValues,
   })
 
-  const tripType = watch("tripType")
   const searchMutation = useSearchFlights()
 
-  const onSubmit = (data: SearchInput) => {
-    console.log("Form data:", data)
+  const onSubmit = (formData: SearchFormData) => {
+    console.log("Form data:", formData)
 
     const searchState: SearchState = {
-      input: data,
-      chatHistory,
-      results: [],
+      sessionId,
+      formData: {
+        departurePlace: formData.departurePlace,
+        returnPlace: formData.returnPlace,
+        departureDate: formData.departureDate,
+        returnDate: formData.returnDate,
+      },
+      messages,
+      trigger: "search",
     }
 
     searchMutation.mutate(searchState, {
       onSuccess: () => {
         setShowResults(true)
-        toast({
-          title: "Search successful",
-          description: "Found flights matching your criteria.",
-        })
       },
       onError: (error) => {
         console.error("Search error:", error)
@@ -77,181 +81,124 @@ export function FlightSearch() {
     })
   }
 
+  const handleChatMessage = (message: string) => {
+    const newMessage: ChatMessage = {
+      role: "user",
+      content: message,
+    }
+    setMessages((prev) => [...prev, newMessage])
+
+    const searchState: SearchState = {
+      sessionId,
+      formData: {
+        departurePlace: watch("departurePlace"),
+        returnPlace: watch("returnPlace"),
+        departureDate: watch("departureDate"),
+        returnDate: watch("returnDate"),
+      },
+      messages: [...messages, newMessage],
+      trigger: "chat",
+    }
+
+    searchMutation.mutate(searchState, {
+      onSuccess: (data) => {
+        if (data.message) {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: data.message },
+          ])
+        }
+        setShowResults(true)
+      },
+      onError: (error) => {
+        console.error("Chat error:", error)
+        toast({
+          variant: "destructive",
+          title: "Chat failed",
+          description: "Failed to process your message. Please try again.",
+        })
+      },
+    })
+  }
+
   return (
     <div className="flex flex-col h-dvh">
       <div className="flex-none space-y-4 p-4">
         <h1 className="font-bold text-2xl">Where do we fly next?</h1>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <Select
-              value={tripType}
-              onValueChange={(value: TripType) => {
-                setValue("tripType", value)
-                trigger("tripType")
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select trip type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="oneway">One-way</SelectItem>
-                <SelectItem value="return">Return</SelectItem>
-                <SelectItem value="multicity">Multi-city</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.tripType && (
-              <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
-                <AlertCircle className="w-4 h-4" />
-                {errors.tripType.message}
-              </p>
-            )}
-          </div>
-
           <div className="gap-4 grid">
             <div className="relative">
-              <Label htmlFor="from">From</Label>
+              <Label htmlFor="departurePlace">From</Label>
               <div className="relative">
                 <MapPin className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
                 <Input
-                  id="from"
+                  id="departurePlace"
                   placeholder="Departure city or airport"
-                  className={cn("pl-9", errors.from && "border-destructive")}
-                  {...register("from")}
+                  className={cn("pl-9", errors.departurePlace && "border-destructive")}
+                  {...register("departurePlace")}
                 />
               </div>
-              {errors.from && (
+              {errors.departurePlace && (
                 <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
                   <AlertCircle className="w-4 h-4" />
-                  {errors.from.message}
+                  {errors.departurePlace.message}
                 </p>
               )}
             </div>
 
             <div className="relative">
-              <Label htmlFor="to">To</Label>
+              <Label htmlFor="returnPlace">To</Label>
               <div className="relative">
                 <MapPin className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
                 <Input
-                  id="to"
+                  id="returnPlace"
                   placeholder="Arrival city or airport"
-                  className={cn("pl-9", errors.to && "border-destructive")}
-                  {...register("to")}
+                  className={cn("pl-9", errors.returnPlace && "border-destructive")}
+                  {...register("returnPlace")}
                 />
               </div>
-              {errors.to && (
+              {errors.returnPlace && (
                 <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
                   <AlertCircle className="w-4 h-4" />
-                  {errors.to.message}
+                  {errors.returnPlace.message}
                 </p>
               )}
             </div>
-
-            {tripType === "multicity" && (
-              <Button variant="outline" className="w-full">
-                <Plus className="mr-2 w-4 h-4" />
-                Add another flight
-              </Button>
-            )}
           </div>
 
           <div className="gap-4 grid sm:grid-cols-2">
             <div>
               <Label>Departure</Label>
               <DatePicker
-                date={watch("departDate")}
+                date={watch("departureDate") ? new Date(watch("departureDate")) : undefined}
                 setDate={(date) => {
-                  setValue("departDate", date)
-                  trigger("departDate")
+                  setValue("departureDate", date ? date.toISOString().split("T")[0] : "")
+                  trigger("departureDate")
                 }}
               />
-              {errors.departDate && (
+              {errors.departureDate && (
                 <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
                   <AlertCircle className="w-4 h-4" />
-                  {errors.departDate.message}
+                  {errors.departureDate.message}
                 </p>
               )}
             </div>
-            {tripType === "return" && (
-              <div>
-                <Label>Return</Label>
-                <DatePicker
-                  date={watch("returnDate") || undefined}
-                  setDate={(date) => {
-                    setValue("returnDate", date || null)
-                    trigger("returnDate")
-                  }}
-                />
-                {errors.returnDate && (
-                  <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.returnDate.message}
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div className="gap-4 grid sm:grid-cols-2">
             <div>
-              <Label>Passengers</Label>
-              <div className="relative">
-                <Users className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
-                <Select
-                  value={watch("passengers").toString()}
-                  onValueChange={(value) => {
-                    setValue("passengers", parseInt(value, 10))
-                    trigger("passengers")
-                  }}
-                >
-                  <SelectTrigger className={cn("pl-9", errors.passengers && "border-destructive")}>
-                    <SelectValue placeholder="Select passengers" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6].map((num) => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num} {num === 1 ? "passenger" : "passengers"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.passengers && (
-                  <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.passengers.message}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div>
-              <Label>Bags</Label>
-              <div className="relative">
-                <Briefcase className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
-                <Select
-                  value={watch("bags").toString()}
-                  onValueChange={(value) => {
-                    setValue("bags", parseInt(value, 10))
-                    trigger("bags")
-                  }}
-                >
-                  <SelectTrigger className={cn("pl-9", errors.bags && "border-destructive")}>
-                    <SelectValue placeholder="Select bags" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[0, 1, 2, 3].map((num) => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num} {num === 1 ? "bag" : "bags"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.bags && (
-                  <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    {errors.bags.message}
-                  </p>
-                )}
-              </div>
+              <Label>Return</Label>
+              <DatePicker
+                date={watch("returnDate") ? new Date(watch("returnDate")) : undefined}
+                setDate={(date) => {
+                  setValue("returnDate", date ? date.toISOString().split("T")[0] : null)
+                  trigger("returnDate")
+                }}
+              />
+              {errors.returnDate && (
+                <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
+                  <AlertCircle className="w-4 h-4" />
+                  {errors.returnDate.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -270,9 +217,7 @@ export function FlightSearch() {
         {showResults && <SearchResults results={searchMutation.data} />}
       </div>
 
-      <AIPrompt className="flex-none" onMessage={(message) => {
-        setChatHistory((prev) => [...prev, { role: "user", content: message }])
-      }} />
+      <AIPrompt className="flex-none" onMessage={handleChatMessage} />
     </div>
   )
 }

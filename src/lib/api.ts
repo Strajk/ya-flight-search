@@ -1,10 +1,8 @@
 import { useMutation } from "@tanstack/react-query"
 import { SearchState } from "@/types/search"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
-
 export async function searchFlights(searchState: SearchState) {
-  const response = await fetch(`${API_BASE_URL}/api/search`, {
+  const response = await fetch(`/api/chat`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
