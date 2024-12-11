@@ -44,3 +44,11 @@ Then it should call OpenAI API again twice:
   - suggested filters
   - form data to update the form ui
   - short message about what was done
+
+## Enhanced Flight Card UI (2024-03-19)
+- Redesigned flight card layout to match the screenshot
+- Improved typography with larger time display
+- Added visual connection line between departure and arrival
+- Simplified information hierarchy
+- Made price more prominent
+- Improved responsive design for mobile and desktop

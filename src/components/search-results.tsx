@@ -1,11 +1,12 @@
 import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Plane, MessageCircle, Filter, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Plane, MessageCircle, Filter, Loader2, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react"
 import { Flight, SearchResponse, SuggestedFilter } from "@/types/search"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import { useRef, useState } from "react"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card"
 
 
 interface SearchResultsProps {
@@ -107,33 +108,63 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
                   {results.flights.map((flight) => (
                     <Card 
                       key={flight.id} 
-                      className="flex-none bg-muted/50 p-4 snap-start w-[300px] sm:w-[400px]"
+                      className="flex-none bg-muted/50 hover:bg-muted/70 p-6 snap-start w-[380px] sm:w-[400px] transition-colors"
                     >
-                      <div className="flex flex-col gap-4">
-                        <div className="flex items-start space-x-4">
-                          <Plane className="flex-shrink-0 mt-1 w-6 h-6" />
-                          <div className="space-y-1">
-                            <div className="font-medium">
-                              {flight.airline} {flight.flightNumber}
+                      <div className="space-y-6">
+                        <div className="flex justify-between items-center">
+                          <div className="flex flex-col">
+                            <div className="font-medium text-2xl tracking-tight">
+                              {format(new Date(flight.departureTime), "HH:mm")}
                             </div>
-                            <div className="text-sm">
-                              <span>{format(new Date(flight.departureTime), "HH:mm")}</span>
-                              <span className="mx-2">→</span>
-                              <span>{format(new Date(flight.arrivalTime), "HH:mm")}</span>
-                              <span className="mx-2">·</span>
-                              <span>{flight.duration}</span>
-                              <span className="mx-2">·</span>
-                              <span>{flight.stops === 0 ? "Direct" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</span>
+                            <HoverCard>
+                              <HoverCardTrigger>
+                                <div className="text-muted-foreground text-sm hover:text-foreground transition-colors">
+                                  {flight.stops === 0 ? "Direct" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}
+                                </div>
+                              </HoverCardTrigger>
+                              <HoverCardContent>
+                                <div className="flex items-center gap-2">
+                                  <Plane className="w-4 h-4" />
+                                  <span>{flight.airline} {flight.flightNumber}</span>
+                                </div>
+                              </HoverCardContent>
+                            </HoverCard>
+                          </div>
+
+                          <div className="flex flex-col items-center px-6">
+                            <div className="font-medium text-sm">
+                              {flight.duration}
+                            </div>
+                            <div className="relative my-2 bg-border w-32 h-[2px]">
+                              <div className="-top-[5px] -left-1 absolute bg-primary rounded-full w-2 h-2" />
+                              <div className="-top-[5px] -right-1 absolute bg-primary rounded-full w-2 h-2" />
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col items-end">
+                            <div className="font-medium text-2xl tracking-tight">
+                              {format(new Date(flight.arrivalTime), "HH:mm")}
+                            </div>
+                            <div className="text-muted-foreground text-sm">
+                              {format(new Date(flight.arrivalTime), "EEE, MMM d")}
                             </div>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <div className="font-medium">
-                            {flight.price} {flight.currency}
+
+                        <div className="flex justify-between items-center">
+                          <div className="flex items-baseline gap-1">
+                            <div className="font-medium text-2xl tracking-tight">
+                              {flight.price}
+                            </div>
+                            <div className="text-muted-foreground text-sm">
+                              {flight.currency}
+                            </div>
                           </div>
-                          <div className="text-muted-foreground text-sm">
-                            per person
-                          </div>
+                          
+                          <Button className="gap-2">
+                            Book flight
+                            <ArrowRight className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     </Card>
