@@ -152,3 +152,19 @@ MANUAL: Disable eslint rules
   - Responsive card sizes for different screens
   - Improved visual feedback with backdrop blur
   - Enhanced accessibility with proper button labels
+
+## Search API Rewrite
+- Completely rewrote the search API logic to handle complex search requests
+- Implemented multiple OpenAI API calls:
+  - First call generates structured flight results
+  - Second call generates contextual suggested filters based on flights
+  - Third call generates form UI updates based on user intent
+  - Fourth call generates a friendly summary message
+- Improved prompts:
+  - Added detailed system prompts for each API call
+  - Structured JSON responses with proper validation
+  - Better context handling with search parameters and chat history
+- Removed mock data and static filter generation
+- Added proper error handling and response validation
+- Added form updates to help users refine their search
+- Improved response structure with all necessary data

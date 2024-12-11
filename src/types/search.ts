@@ -95,7 +95,7 @@ export type Flight = z.infer<typeof FlightSchema>
 export const SuggestedFilterSchema = z.object({
   id: z.string(),
   label: z.string(),
-  description: z.string().optional(),
+  prompt: z.string().optional(),
 })
 
 export type SuggestedFilter = z.infer<typeof SuggestedFilterSchema>

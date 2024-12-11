@@ -29,3 +29,18 @@ Prefil the search form with example valid values
 ## 2024-03-19 15:02:00
 Search api should also respond with list of suggested textual filters based on the returned flights, e.g. "early departures", "sunday evening returns", "under 100$", "under 500$". It should be contextual.
 Render these under the results so user can click on them.
+
+## 2024-03-19 15:03:00
+Completely rewrite the search API logic.
+It receives a search form state, chat messages, and what trigged the request, either submitting the form or sending a message.
+
+It should combine all of that to prompt, and send it to the OpenAI API, requesting a structured response of flights.
+Then it should call OpenAI API again twice:
+-  with the flights and original prompt, and ask for suggested subsequent filters based on the flights (e.g. Under $xxx, only morning departures, returns on sunday)
+- with original prompt, and ask to respond to what to update the original form ui, in the same structured format as it was sent from the client
+
+- The whole response should include:
+  - flights
+  - suggested filters
+  - form data to update the form ui
+  - short message about what was done

@@ -35,6 +35,7 @@ Rules:
 - Follow SEO best practices
 
 - For markdown, use dash for unordered lists
+- Prefer gpt-4o model
 
 After all the code changes, write a short report of what you did, in bullet points, and append it to the end of .meta/steps.md file. Always just append, don't change existing content.
 
