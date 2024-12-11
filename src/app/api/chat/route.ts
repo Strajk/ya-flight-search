@@ -84,7 +84,6 @@ const mockedResponse = {
   suggestedFilters: [
     {
       id: "filter-under-500",
-      id: "filter-under-500",
       label: "Flights under $500",
       prompt: "Search flights priced under $500"
     },
@@ -104,11 +103,22 @@ const mockedResponse = {
       prompt: "Search for flights with duration under 5 hours"
     }
   ],
-  formUpdates: null
+  formUpdates: {
+    departurePlace: "BRQ",
+    returnPlace: "London (LON)",
+    departureDate: "2024-12-12",
+    returnDate: null
+  }
 } as const
 
+const useMock = false
+
 export async function POST(request: Request) {
-  return NextResponse.json(mockedResponse)
+  if (useMock) {
+    await new Promise(resolve => setTimeout(resolve, 1500))
+    return NextResponse.json(mockedResponse)
+  }
+
   try {
     const body = await request.json()
     const searchStateSchema = z.object({
@@ -125,7 +135,7 @@ export async function POST(request: Request) {
 
     // 1. Generate flights
     const flightsCompletion = await openai.beta.chat.completions.parse({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system", content: dedent(`
@@ -155,11 +165,20 @@ export async function POST(request: Request) {
 
     console.log("[API] Kiwi Search API Request", searchApiReqParams)
 
-    const flights = await fakeApi(searchApiReqParams)
+    if (!searchApiReqParams) {
+      return NextResponse.json({
+        message: "I couldn't understand the search parameters. Could you please try again with more specific details?",
+        flights: [],
+        suggestedFilters: [],
+        formUpdates: null,
+      } satisfies SearchResponse)
+    }
+
+    const flights = await fakeApi(searchApiReqParams as { flyFrom: string; to: string; dateFrom: string; dateTo: string })
 
     // 2. Generate suggested filters
     const filtersCompletion = await openai.beta.chat.completions.parse({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system", content: dedent(`
@@ -206,7 +225,7 @@ export async function POST(request: Request) {
     let formUpdates = null
     try {
       const formUpdateCompletion = await openai.beta.chat.completions.parse({
-        model: "gpt-4o",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system", content: dedent(`
@@ -239,37 +258,37 @@ export async function POST(request: Request) {
     console.log("[API] Form Updates", formUpdates)
 
     // Generate a summary message
-    const summaryCompletion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: dedent(`
-            Generate a short, friendly summary of the flight search results. 
-            Be concise and highlight key findings.`
-          )
-        },
-        {
-          role: "user",
-          content: dedent(`
-            Search Parameters:
-            ${JSON.stringify(searchState.formData, null, 2)}
+    // const summaryCompletion = await openai.chat.completions.create({
+    //   model: "gpt-4o-mini",
+    //   messages: [
+    //     {
+    //       role: "system",
+    //       content: dedent(`
+    //         Generate a short, friendly summary of the flight search results. 
+    //         Be concise and highlight key findings.`
+    //       )
+    //     },
+    //     {
+    //       role: "user",
+    //       content: dedent(`
+    //         Search Parameters:
+    //         ${JSON.stringify(searchState.formData, null, 2)}
 
-            Chat History:
-            ${searchState.messages.map(m => `${m.role}: ${m.content}`).join("\n")}
+    //         Chat History:
+    //         ${searchState.messages.map(m => `${m.role}: ${m.content}`).join("\n")}
 
-            What user action triggered this search call: ${searchState.trigger}
+    //         What user action triggered this search call: ${searchState.trigger}
 
-            Found Flights:
-            ${JSON.stringify(flights, null, 2)}
-          `)
-        },
-      ],
-      temperature: 0.7,
-      max_tokens: 150,
-    })
+    //         Found Flights:
+    //         ${JSON.stringify(flights, null, 2)}
+    //       `)
+    //     },
+    //   ],
+    //   temperature: 0.7,
+    //   max_tokens: 150,
+    // })
 
-    const message = summaryCompletion.choices[0]?.message?.content || "Here are your flight options."
+    const message = "Here are your flight options."
 
     return NextResponse.json({
       message,

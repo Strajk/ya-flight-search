@@ -19,7 +19,7 @@ import { SearchResults } from "@/components/search-results"
 import { AIPrompt } from "@/components/ai-prompt"
 import { DatePicker } from "@/components/date-picker"
 import { useSearchFlights } from "@/lib/api"
-import { SearchFormData, SearchFormDataSchema, ChatMessage, SearchState } from "@/types/search"
+import { SearchFormData, SearchFormDataSchema, ChatMessage, SearchState, SuggestedFilter } from "@/types/search"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 
@@ -67,7 +67,25 @@ export function FlightSearch() {
     }
 
     searchMutation.mutate(searchState, {
-      onSuccess: () => {
+      onSuccess: (data) => {
+        if (data.message) {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: data.message },
+          ])
+        }
+
+        // Update form values if formUpdates are present
+        if (data.formUpdates) {
+          Object.entries(data.formUpdates).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              setValue(key as keyof SearchFormData, value as string)
+            }
+          })
+          // Trigger validation after form updates
+          trigger()
+        }
+
         setShowResults(true)
       },
       onError: (error) => {
@@ -108,6 +126,18 @@ export function FlightSearch() {
             { role: "assistant", content: data.message },
           ])
         }
+
+        // Update form values if formUpdates are present
+        if (data.formUpdates) {
+          Object.entries(data.formUpdates).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              setValue(key as keyof SearchFormData, value as string)
+            }
+          })
+          // Trigger validation after form updates
+          trigger()
+        }
+
         setShowResults(true)
       },
       onError: (error) => {
@@ -125,6 +155,9 @@ export function FlightSearch() {
     const message = `Show me flights that are ${filter.label.toLowerCase()}`
     handleChatMessage(message)
   }
+
+  const returnDate = watch("returnDate")
+  const parsedReturnDate = returnDate ? new Date(returnDate) : undefined
 
   return (
     <div className="flex flex-col h-dvh">
@@ -170,40 +203,28 @@ export function FlightSearch() {
                 </p>
               )}
             </div>
-          </div>
 
-          <div className="gap-4 grid sm:grid-cols-2">
-            <div>
-              <Label>Departure</Label>
-              <DatePicker
-                date={watch("departureDate") ? new Date(watch("departureDate")) : undefined}
-                setDate={(date) => {
-                  setValue("departureDate", date ? date.toISOString().split("T")[0] : "")
-                  trigger("departureDate")
-                }}
-              />
-              {errors.departureDate && (
-                <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.departureDate.message}
-                </p>
-              )}
-            </div>
-            <div>
-              <Label>Return</Label>
-              <DatePicker
-                date={watch("returnDate") ? new Date(watch("returnDate")) : undefined}
-                setDate={(date) => {
-                  setValue("returnDate", date ? date.toISOString().split("T")[0] : null)
-                  trigger("returnDate")
-                }}
-              />
-              {errors.returnDate && (
-                <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.returnDate.message}
-                </p>
-              )}
+            <div className="gap-4 grid sm:grid-cols-2">
+              <div>
+                <Label>Departure</Label>
+                <DatePicker
+                  date={watch("departureDate") ? new Date(watch("departureDate")) : undefined}
+                  setDate={(date) => {
+                    setValue("departureDate", date ? date.toISOString().split("T")[0] : "")
+                    trigger("departureDate")
+                  }}
+                />
+              </div>
+              <div>
+                <Label>Return</Label>
+                <DatePicker
+                  date={parsedReturnDate}
+                  setDate={(date) => {
+                    setValue("returnDate", date ? date.toISOString().split("T")[0] : null)
+                    trigger("returnDate")
+                  }}
+                />
+              </div>
             </div>
           </div>
 
@@ -223,6 +244,7 @@ export function FlightSearch() {
           <SearchResults
             results={searchMutation.data}
             onFilterClick={handleFilterClick}
+            isLoading={searchMutation.isPending}
           />
         )}
       </div>

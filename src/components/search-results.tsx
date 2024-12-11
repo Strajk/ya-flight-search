@@ -64,7 +64,7 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
   return (
     <div className="p-4">
       <Card className="p-4">
-        <div className="space-y-4">
+        <div className="space-y-1">
           {/* Message */}
           <div className="flex gap-3">
             <MessageCircle className="flex-shrink-0 mt-1 w-5 h-5" />
@@ -78,7 +78,6 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
           {/* Flights */}
           {results.flights && results.flights.length > 0 && (
             <>
-              <Separator className="my-4" />
               <div className="relative">
                 {/* Scroll buttons */}
                 {canScrollLeft && (
@@ -105,7 +104,7 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
                 {/* Scrollable container */}
                 <div
                   ref={scrollContainerRef}
-                  className="flex gap-4 snap-mandatory snap-x pb-4 overflow-x-auto scrollbar-hide"
+                  className="flex gap-4 snap-mandatory snap-x overflow-x-auto scrollbar-hide"
                   onScroll={() => checkScrollButtons()}
                 >
                   {results.flights.map((flight) => (
@@ -150,25 +149,26 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
           {/* Suggested Filters */}
           {results.suggestedFilters && results.suggestedFilters.length > 0 && (
             <>
-              <Separator className="my-4" />
               <div>
                 <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm">
                   <Filter className="w-4 h-4" />
                   <span>Try filtering by:</span>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {results.suggestedFilters.map((filter) => (
-                    <Button
-                      key={filter.id}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => onFilterClick?.(filter)}
-                      title={filter.description}
-                      className="bg-background hover:bg-background/80"
-                    >
-                      {filter.label}
-                    </Button>
-                  ))}
+                <div className="relative">
+                  <div className="flex gap-2 snap-mandatory snap-x pb-2 overflow-x-auto scrollbar-hide">
+                    {results.suggestedFilters.map((filter) => (
+                      <Button
+                        key={filter.id}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onFilterClick?.(filter)}
+                        title={filter.description}
+                        className="flex-none bg-background/50 hover:bg-background/80 px-2 py-0.5 snap-start h-auto text-xs"
+                      >
+                        {filter.label}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </>

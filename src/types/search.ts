@@ -57,9 +57,10 @@ export interface ChatMessage {
   content: string
 }
 
+// Important: Avoid overspecifying, as it's passed to OpenAI
 export const SearchFormDataSchema = z.object({
-  departurePlace: z.string().min(1, "Please enter a departure location"),
-  returnPlace: z.string().min(1, "Please enter an arrival location"),
+  departurePlace: z.string(),
+  returnPlace: z.string(),
   departureDate: z.string(),
   returnDate: z.string().nullable().optional(),
 })
@@ -100,10 +101,20 @@ export const SuggestedFilterSchema = z.object({
 
 export type SuggestedFilter = z.infer<typeof SuggestedFilterSchema>
 
+export const FormUpdatesSchema = z.object({
+  departurePlace: z.string().optional(),
+  returnPlace: z.string().optional(),
+  departureDate: z.string().optional(),
+  returnDate: z.string().nullable().optional(),
+})
+
+export type FormUpdates = z.infer<typeof FormUpdatesSchema>
+
 export const SearchResponseSchema = z.object({
   message: z.string(),
   flights: z.array(FlightSchema),
   suggestedFilters: z.array(SuggestedFilterSchema),
+  formUpdates: FormUpdatesSchema.optional(),
 })
 
 export type SearchResponse = z.infer<typeof SearchResponseSchema> 
