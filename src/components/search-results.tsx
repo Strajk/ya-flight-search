@@ -1,27 +1,71 @@
 import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
-import { Plane, MessageCircle } from "lucide-react"
-import { Flight, SearchResponse } from "@/types/search"
+import { Button } from "@/components/ui/button"
+import { Plane, MessageCircle, Filter, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
+import { Flight, SuggestedFilter } from "@/types/search"
 import { cn } from "@/lib/utils"
+import { Separator } from "@/components/ui/separator"
+import { useRef, useState } from "react"
 
-interface SearchResultsProps {
-  results?: SearchResponse
+interface SearchResponse {
+  message: string
+  flights: Flight[]
+  suggestedFilters: SuggestedFilter[]
 }
 
-export function SearchResults({ results }: SearchResultsProps) {
-  if (!results) {
+interface SearchResultsProps {
+  results: SearchResponse | null
+  onFilterClick: (filter: SuggestedFilter) => void
+  isLoading?: boolean
+}
+
+export function SearchResults({ results, onFilterClick, isLoading }: SearchResultsProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  const checkScrollButtons = () => {
+    if (scrollContainerRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
+      setCanScrollLeft(scrollLeft > 0)
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5) // 5px threshold
+    }
+  }
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = scrollContainerRef.current.clientWidth * 0.8
+      scrollContainerRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      })
+    }
+  }
+
+  if (isLoading) {
     return (
-      <div className="p-4 text-center text-muted-foreground">
-        No results found. Try adjusting your search criteria.
+      <div className="flex justify-center items-center p-8">
+        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+          <Loader2 className="w-8 h-8 animate-spin" />
+          <p>Searching for flights...</p>
+        </div>
       </div>
     )
   }
 
-  // Handle chat message response
-  if (!results.flights) {
+  if (!results) {
     return (
-      <div className="p-4">
-        <Card className="p-4">
+      <div className="p-4 text-center text-muted-foreground">
+        Start by entering your search criteria above.
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4">
+      <Card className="p-4">
+        <div className="space-y-4">
+          {/* Message */}
           <div className="flex gap-3">
             <MessageCircle className="flex-shrink-0 mt-1 w-5 h-5" />
             <div className="dark:prose-invert prose prose-sm">
@@ -30,63 +74,117 @@ export function SearchResults({ results }: SearchResultsProps) {
               ))}
             </div>
           </div>
-        </Card>
-      </div>
-    )
-  }
 
-  // Handle flight results
-  if (results.flights.length === 0) {
-    return (
-      <div className="p-4 text-center text-muted-foreground">
-        No flights found. Try adjusting your search criteria.
-      </div>
-    )
-  }
+          {/* Flights */}
+          {results.flights && results.flights.length > 0 && (
+            <>
+              <Separator className="my-4" />
+              <div className="relative">
+                {/* Scroll buttons */}
+                {canScrollLeft && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="top-1/2 left-0 z-10 absolute bg-background/80 backdrop-blur-sm -translate-y-1/2"
+                    onClick={() => scroll('left')}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                )}
+                {canScrollRight && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="top-1/2 right-0 z-10 absolute bg-background/80 backdrop-blur-sm -translate-y-1/2"
+                    onClick={() => scroll('right')}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                )}
+                
+                {/* Scrollable container */}
+                <div
+                  ref={scrollContainerRef}
+                  className="flex gap-4 snap-mandatory snap-x pb-4 overflow-x-auto scrollbar-hide"
+                  onScroll={() => checkScrollButtons()}
+                >
+                  {results.flights.map((flight) => (
+                    <Card 
+                      key={flight.id} 
+                      className="flex-none bg-muted/50 p-4 snap-start w-[300px] sm:w-[400px]"
+                    >
+                      <div className="flex flex-col gap-4">
+                        <div className="flex items-start space-x-4">
+                          <Plane className="flex-shrink-0 mt-1 w-6 h-6" />
+                          <div className="space-y-1">
+                            <div className="font-medium">
+                              {flight.airline} {flight.flightNumber}
+                            </div>
+                            <div className="text-sm">
+                              <span>{format(new Date(flight.departureTime), "HH:mm")}</span>
+                              <span className="mx-2">→</span>
+                              <span>{format(new Date(flight.arrivalTime), "HH:mm")}</span>
+                              <span className="mx-2">·</span>
+                              <span>{flight.duration}</span>
+                              <span className="mx-2">·</span>
+                              <span>{flight.stops === 0 ? "Direct" : `${flight.stops} stop${flight.stops > 1 ? "s" : ""}`}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="font-medium">
+                            {flight.price} {flight.currency}
+                          </div>
+                          <div className="text-muted-foreground text-sm">
+                            per person
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
-  return (
-    <div className="space-y-4 p-4">
-      {results.message && (
-        <div className="mb-4 text-muted-foreground text-sm">
-          {results.message}
+          {/* Suggested Filters */}
+          {results.suggestedFilters && results.suggestedFilters.length > 0 && (
+            <>
+              <Separator className="my-4" />
+              <div>
+                <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm">
+                  <Filter className="w-4 h-4" />
+                  <span>Try filtering by:</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {results.suggestedFilters.map((filter) => (
+                    <Button
+                      key={filter.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onFilterClick?.(filter)}
+                      title={filter.description}
+                      className="bg-background hover:bg-background/80"
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* No flights message */}
+          {(!results.flights || results.flights.length === 0) && (
+            <>
+              <Separator className="my-4" />
+              <div className="text-center text-muted-foreground">
+                No flights found matching your criteria.
+              </div>
+            </>
+          )}
         </div>
-      )}
-      {results.flights.map((flight) => (
-        <Card key={flight.id} className="p-4">
-          <div className="flex sm:flex-row flex-col justify-between gap-4">
-            <div className="flex items-start space-x-4">
-              <Plane className="flex-shrink-0 mt-1 w-6 h-6" />
-              <div className="space-y-1">
-                <div className="font-medium">
-                  {flight.airline} {flight.flightNumber}
-                </div>
-                <div className="text-sm">
-                  <div className="flex items-center gap-2">
-                    <span>{format(new Date(flight.departureTime), "HH:mm")}</span>
-                    <span>→</span>
-                    <span>{format(new Date(flight.arrivalTime), "HH:mm")}</span>
-                  </div>
-                  <div className="text-muted-foreground">
-                    {flight.duration} • {flight.stops === 0 ? "Direct" : `${flight.stops} stops`}
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className={cn(
-              "flex items-center gap-4 sm:flex-col sm:items-end",
-              "sm:text-right border-t sm:border-t-0 pt-4 sm:pt-0"
-            )}>
-              <div className="font-medium">
-                {new Intl.NumberFormat(undefined, {
-                  style: "currency",
-                  currency: flight.currency,
-                }).format(flight.price)}
-              </div>
-              <div className="text-muted-foreground text-sm">per person</div>
-            </div>
-          </div>
-        </Card>
-      ))}
+      </Card>
     </div>
   )
 }

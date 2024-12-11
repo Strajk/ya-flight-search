@@ -25,3 +25,7 @@ curl -X POST https://fast-api-flights.replit.app/search-flights \
 
 ## 2024-03-19 15:01:00
 Prefil the search form with example valid values
+
+## 2024-03-19 15:02:00
+Search api should also respond with list of suggested textual filters based on the returned flights, e.g. "early departures", "sunday evening returns", "under 100$", "under 500$". It should be contextual.
+Render these under the results so user can click on them.

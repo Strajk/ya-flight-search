@@ -121,6 +121,11 @@ export function FlightSearch() {
     })
   }
 
+  const handleFilterClick = (filter: SuggestedFilter) => {
+    const message = `Show me flights that are ${filter.label.toLowerCase()}`
+    handleChatMessage(message)
+  }
+
   return (
     <div className="flex flex-col h-dvh">
       <div className="flex-none space-y-4 p-4">
@@ -214,7 +219,12 @@ export function FlightSearch() {
       </div>
 
       <div className="flex-1 overflow-auto">
-        {showResults && <SearchResults results={searchMutation.data} />}
+        {showResults && (
+          <SearchResults
+            results={searchMutation.data}
+            onFilterClick={handleFilterClick}
+          />
+        )}
       </div>
 
       <AIPrompt className="flex-none" onMessage={handleChatMessage} />

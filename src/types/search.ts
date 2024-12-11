@@ -92,8 +92,18 @@ export const FlightSchema = z.object({
 
 export type Flight = z.infer<typeof FlightSchema>
 
-export interface SearchResponse {
-  message: string
-  flights?: Flight[]
-  sessionId: string
-} 
+export const SuggestedFilterSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  description: z.string().optional(),
+})
+
+export type SuggestedFilter = z.infer<typeof SuggestedFilterSchema>
+
+export const SearchResponseSchema = z.object({
+  message: z.string(),
+  flights: z.array(FlightSchema),
+  suggestedFilters: z.array(SuggestedFilterSchema),
+})
+
+export type SearchResponse = z.infer<typeof SearchResponseSchema> 
