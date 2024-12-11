@@ -2,16 +2,11 @@ import { format } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Plane, MessageCircle, Filter, Loader2, ChevronLeft, ChevronRight } from "lucide-react"
-import { Flight, SuggestedFilter } from "@/types/search"
+import { Flight, SearchResponse, SuggestedFilter } from "@/types/search"
 import { cn } from "@/lib/utils"
 import { Separator } from "@/components/ui/separator"
 import { useRef, useState } from "react"
 
-interface SearchResponse {
-  message: string
-  flights: Flight[]
-  suggestedFilters: SuggestedFilter[]
-}
 
 interface SearchResultsProps {
   results: SearchResponse | null
@@ -69,8 +64,10 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
           <div className="flex gap-3">
             <MessageCircle className="flex-shrink-0 mt-1 w-5 h-5" />
             <div className="dark:prose-invert prose prose-sm">
-              {results.message.split('\n').map((line, i) => (
-                <p key={i} className="my-2">{line}</p>
+              {results.messages.map((message) => (
+                <p key={message.role}>
+                  <strong>{message.role === "user" ? "You" : "Assistant"}:</strong> {message.content}
+                </p>
               ))}
             </div>
           </div>
@@ -162,7 +159,7 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
                         variant="outline"
                         size="sm"
                         onClick={() => onFilterClick?.(filter)}
-                        title={filter.description}
+                        title={filter.prompt}
                         className="flex-none bg-background/50 hover:bg-background/80 px-2 py-0.5 snap-start h-auto text-xs"
                       >
                         {filter.label}

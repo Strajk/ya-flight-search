@@ -111,7 +111,10 @@ export const FormUpdatesSchema = z.object({
 export type FormUpdates = z.infer<typeof FormUpdatesSchema>
 
 export const SearchResponseSchema = z.object({
-  message: z.string(),
+  messages: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string()
+  })),
   flights: z.array(FlightSchema),
   suggestedFilters: z.array(SuggestedFilterSchema),
   formUpdates: FormUpdatesSchema.optional(),

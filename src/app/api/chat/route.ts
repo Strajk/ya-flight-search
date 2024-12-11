@@ -7,6 +7,7 @@ import {
   FlightSchema,
   SuggestedFilterSchema,
   SearchFormDataSchema,
+  SearchResponse,
 } from "@/types/search"
 import dedent from "dedent"
 import { faker } from "@faker-js/faker"
@@ -23,7 +24,10 @@ const kiwiSearchApiSchema = z.object({
 })
 
 const mockedResponse = {
-  message: "I found several flight options for your trip from Prague (PRG) to London (LON) on March 1, 2024. Prices range from $242 to $946, with durations varying between 3 to 9 hours and stops from 0 to 2. Some airlines offering flights include Douglas and Sons, Schiller and Sons, Denesik - Kozey, Reynolds and Sons, and O'Kon, Krajcik and Adams.",
+  messages: [
+    { role: "user", content: "I want to fly from Prague (PRG) to London (LON) on March 1, 2024." },
+    { role: "assistant", content: "I found several flight options for your trip from Prague (PRG) to London (LON) on March 1, 2024. Prices range from $242 to $946, with durations varying between 3 to 9 hours and stops from 0 to 2. Some airlines offering flights include Douglas and Sons, Schiller and Sons, Denesik - Kozey, Reynolds and Sons, and O'Kon, Krajcik and Adams." },
+  ],
   flights: [
     {
       id: "bacf7765-6943-440b-89c3-b801c0ab2498",
@@ -124,7 +128,7 @@ export async function POST(request: Request) {
     const searchStateSchema = z.object({
       formData: SearchFormDataSchema,
       messages: z.array(z.object({
-        role: z.string(),
+        role: z.enum(["user", "assistant"]),
         content: z.string()
       })),
       trigger: z.string()
@@ -164,15 +168,6 @@ export async function POST(request: Request) {
     const searchApiReqParams = flightsCompletion.choices[0]?.message?.parsed
 
     console.log("[API] Kiwi Search API Request", searchApiReqParams)
-
-    if (!searchApiReqParams) {
-      return NextResponse.json({
-        message: "I couldn't understand the search parameters. Could you please try again with more specific details?",
-        flights: [],
-        suggestedFilters: [],
-        formUpdates: null,
-      } satisfies SearchResponse)
-    }
 
     const flights = await fakeApi(searchApiReqParams as { flyFrom: string; to: string; dateFrom: string; dateTo: string })
 
@@ -216,7 +211,7 @@ export async function POST(request: Request) {
       response_format: zodResponseFormat(z.object({ filters: z.array(SuggestedFilterSchema) }), "filters"),
     })
 
-    const suggestedFilters = filtersCompletion.choices[0]?.message?.parsed
+    const suggestedFilters = filtersCompletion.choices[0]?.message?.parsed?.filters
 
     console.log("[API] Suggested Filters", suggestedFilters)
 
@@ -288,10 +283,13 @@ export async function POST(request: Request) {
     //   max_tokens: 150,
     // })
 
-    const message = "Here are your flight options."
+    const summaryMessage = "Here are your flight options."
+
+    // Append summary message to the chat history
+    const updatedMessages = [...searchState.messages, { role: "assistant", content: summaryMessage }]
 
     return NextResponse.json({
-      message,
+      messages: updatedMessages,
       flights,
       suggestedFilters,
       formUpdates,

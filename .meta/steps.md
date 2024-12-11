@@ -203,3 +203,7 @@ MANUAL: Disable eslint rules
 - Added snap scrolling for better UX
 - Made badges non-shrinkable
 - Added subtle transparency to badge background
+
+## Fixed Message Property Type Error
+- Updated SearchResults component to use correct message property
+- Removed unnecessary message mapping logic
