@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, MapPin, Plus, Search, Briefcase, Users } from 'lucide-react'
+import { Calendar, MapPin, Plus, Search, Briefcase, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -16,28 +16,55 @@ import {
 import { SearchResults } from "@/components/search-results"
 import { AIPrompt } from "@/components/ai-prompt"
 import { DatePicker } from "@/components/date-picker"
+import { useSearchFlights } from "@/lib/api"
+import { SearchInput, SearchState, TripType, ChatMessage } from "@/types/search"
 
 export function FlightSearch() {
-  const [tripType, setTripType] = useState("return")
+  const [tripType, setTripType] = useState<TripType>("return")
   const [from, setFrom] = useState("")
   const [to, setTo] = useState("")
   const [departDate, setDepartDate] = useState<Date>()
   const [returnDate, setReturnDate] = useState<Date>()
-  const [passengers, setPassengers] = useState("1")
-  const [bags, setBags] = useState("0")
+  const [passengers, setPassengers] = useState(1)
+  const [bags, setBags] = useState(0)
+  const [chatHistory, setChatHistory] = useState<ChatMessage[]>([])
   const [showResults, setShowResults] = useState(false)
 
+  const searchMutation = useSearchFlights()
+
   const handleSearch = () => {
-    setShowResults(true)
+    if (!departDate) return
+
+    const searchInput: SearchInput = {
+      tripType,
+      from,
+      to,
+      departDate,
+      returnDate: tripType === "return" ? returnDate : null,
+      passengers,
+      bags,
+    }
+
+    const searchState: SearchState = {
+      input: searchInput,
+      chatHistory,
+      results: [],
+    }
+
+    searchMutation.mutate(searchState, {
+      onSuccess: () => {
+        setShowResults(true)
+      },
+    })
   }
 
   return (
     <div className="flex flex-col h-dvh">
-      <div className="p-4 space-y-4 flex-none">
-        <h1 className="text-2xl font-bold">Where do we fly next?</h1>
+      <div className="flex-none space-y-4 p-4">
+        <h1 className="font-bold text-2xl">Where do we fly next?</h1>
         
         <div className="space-y-4">
-          <Select value={tripType} onValueChange={setTripType}>
+          <Select value={tripType} onValueChange={(value: TripType) => setTripType(value)}>
             <SelectTrigger>
               <SelectValue placeholder="Select trip type" />
             </SelectTrigger>
@@ -48,11 +75,11 @@ export function FlightSearch() {
             </SelectContent>
           </Select>
 
-          <div className="grid gap-4">
+          <div className="gap-4 grid">
             <div className="relative">
               <Label htmlFor="from">From</Label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <MapPin className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
                 <Input
                   id="from"
                   placeholder="Departure city or airport"
@@ -66,7 +93,7 @@ export function FlightSearch() {
             <div className="relative">
               <Label htmlFor="to">To</Label>
               <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <MapPin className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
                 <Input
                   id="to"
                   placeholder="Arrival city or airport"
@@ -79,13 +106,13 @@ export function FlightSearch() {
 
             {tripType === "multicity" && (
               <Button variant="outline" className="w-full">
-                <Plus className="mr-2 h-4 w-4" />
+                <Plus className="mr-2 w-4 h-4" />
                 Add another flight
               </Button>
             )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="gap-4 grid sm:grid-cols-2">
             <div>
               <Label>Departure</Label>
               <DatePicker date={departDate} setDate={setDepartDate} />
@@ -98,12 +125,15 @@ export function FlightSearch() {
             )}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="gap-4 grid sm:grid-cols-2">
             <div>
               <Label>Passengers</Label>
               <div className="relative">
-                <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Select value={passengers} onValueChange={setPassengers}>
+                <Users className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
+                <Select 
+                  value={passengers.toString()} 
+                  onValueChange={(value) => setPassengers(parseInt(value, 10))}
+                >
                   <SelectTrigger className="pl-9">
                     <SelectValue placeholder="Select passengers" />
                   </SelectTrigger>
@@ -120,8 +150,11 @@ export function FlightSearch() {
             <div>
               <Label>Bags</Label>
               <div className="relative">
-                <Briefcase className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Select value={bags} onValueChange={setBags}>
+                <Briefcase className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
+                <Select 
+                  value={bags.toString()} 
+                  onValueChange={(value) => setBags(parseInt(value, 10))}
+                >
                   <SelectTrigger className="pl-9">
                     <SelectValue placeholder="Select bags" />
                   </SelectTrigger>
@@ -137,18 +170,24 @@ export function FlightSearch() {
             </div>
           </div>
 
-          <Button onClick={handleSearch} className="w-full">
-            <Search className="mr-2 h-4 w-4" />
-            Search Flights
+          <Button 
+            onClick={handleSearch} 
+            className="w-full"
+            disabled={searchMutation.isPending}
+          >
+            <Search className="mr-2 w-4 h-4" />
+            {searchMutation.isPending ? "Searching..." : "Search Flights"}
           </Button>
         </div>
       </div>
 
       <div className="flex-1 overflow-auto">
-        {showResults && <SearchResults />}
+        {showResults && <SearchResults results={searchMutation.data} />}
       </div>
 
-      <AIPrompt className="flex-none" />
+      <AIPrompt className="flex-none" onMessage={(message) => {
+        setChatHistory((prev) => [...prev, { role: "user", content: message }])
+      }} />
     </div>
   )
 }

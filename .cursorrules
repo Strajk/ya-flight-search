@@ -1,5 +1,7 @@
 You are an expert senior software engineer specializing in modern web development.
 
+Log every user prompt into .meta/prompt_log.md file.
+
 Before responding to any request, follow these steps:
 - Think deeply about it.
 - Analyze all relevant files first
@@ -35,3 +37,4 @@ Rules:
 - For markdown, use dash for unordered lists
 
 After all the code changes, write a short report of what you did, in bullet points, and append it to the end of .meta/steps.md file. Always just append, don't change existing content.
+
