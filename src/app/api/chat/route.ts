@@ -2,13 +2,15 @@ import {NextResponse} from "next/server"
 import OpenAI from "openai"
 import {zodResponseFormat} from "openai/helpers/zod"
 import {z} from "zod"
-import {FlightSchema, SearchFormDataSchema, SuggestedFilterSchema,} from "@/types/search"
+import {SearchFormDataSchema, SuggestedFilterSchema,} from "@/types/search"
 import { flightsPrompt, filtersPrompt, formUpdatesPrompt } from "@/prompts/flight-search"
 import dedent from "dedent"
-import {fakeApi, kiwiSearchApiSchema} from "@/app/api/kiwi";
+import {getFlights, kiwiSearchApiSchema} from "@/app/api/kiwi";
+
+const openai_api_key = process.env.OPENAI_API_KEY || "";
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: openai_api_key,
 })
 
 const mockedResponse = {
@@ -120,9 +122,7 @@ export async function POST(request: Request) {
       formData: SearchFormDataSchema,
       messages: z.array(z.object({
         role: z.enum(["user", "assistant"]),
-        content: z.string(),
-        flights: z.array(FlightSchema).optional(),
-        suggestedFilters: z.array(SuggestedFilterSchema).optional()
+        content: z.string()
       })),
       trigger: z.string()
     })
@@ -155,9 +155,15 @@ export async function POST(request: Request) {
 
     const searchApiReqParams = flightsCompletion.choices[0]?.message?.parsed
 
+    if (!searchApiReqParams) {
+      throw new Error("Failed to parse flight search parameters")
+    }
+
     console.log("[API] Kiwi Search API Request", searchApiReqParams)
 
-    const flights = await fakeApi(searchApiReqParams as { flyFrom: string; to: string; dateFrom: string; dateTo: string })
+    const flights = await getFlights(searchApiReqParams)
+
+    console.log("[API] Kiwi Search API Response", flights)
 
     // 2. Generate suggested filters
     const filtersCompletion = await openai.beta.chat.completions.parse({
@@ -182,6 +188,7 @@ export async function POST(request: Request) {
       response_format: zodResponseFormat(z.object({ filters: z.array(SuggestedFilterSchema) }), "filters"),
     })
 
+    console.log("[API] Filters Completion", JSON.stringify(flights, null, 2))
     const suggestedFilters = filtersCompletion.choices[0]?.message?.parsed?.filters
 
     console.log("[API] Suggested Filters", suggestedFilters)
