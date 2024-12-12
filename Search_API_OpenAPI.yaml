@@ -1,0 +1,495 @@
+openapi: 3.0.0
+info:
+  title: Kiwi.com Search API
+  version: 1.0.0
+  description: |
+    Search API for finding flight itineraries, including oneway, roundtrip, multicity and nomad (traveling salesman) searches.
+    
+    For new users of the Kiwi.com APIs, please register at tequila.kiwi.com to get your unique API key.
+
+servers:
+  - url: https://searchapi.flying-dutchman.skypicker.com
+
+paths:
+  /flights:
+    get:
+      summary: Search for oneway and roundtrip itineraries
+      description: Search for flight itineraries with options for filtering by dates, stopovers, airlines and more.
+      parameters:
+        - in: query
+          name: partner
+          required: true
+          schema:
+            type: string
+          description: Name of your affil/partner ID
+          example: nameOfTheRegisteredPartner
+          
+        - in: query
+          name: partner_market
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 2
+          description: The market country code (ISO 3166-1 alpha-2)
+          example: cz
+          
+        - in: query
+          name: fly_from
+          schema:
+            type: string
+          description: |
+            Departure locations (multiple values separated by comma).
+            Can be airport codes, city IDs, country codes, etc.
+          example: "airport:DUS"
+          
+        - in: query
+          name: fly_to
+          schema:
+            type: string
+          description: |
+            Destination locations (multiple values separated by comma).
+            Can be airport codes, city IDs, country codes, etc.
+          example: "airport:PRG"
+          
+        - in: query
+          name: date_from
+          schema:
+            type: string
+            format: date
+          description: Departure date from (YYYY-MM-DD)
+          example: "2024-01-15"
+          deprecated: true
+          
+        - in: query
+          name: date_to
+          schema:
+            type: string
+            format: date
+          description: Departure date to (YYYY-MM-DD)
+          example: "2024-01-20"
+          deprecated: true
+          
+        - in: query
+          name: depart_after
+          schema:
+            type: string
+            format: date-time
+          description: Departure datetime from (YYYY-MM-DDThh:mm)
+          example: "2024-01-15T10:00"
+          
+        - in: query
+          name: depart_before
+          schema:
+            type: string
+            format: date-time
+          description: Departure datetime to (YYYY-MM-DDThh:mm)
+          example: "2024-01-20T22:00"
+          
+        - in: query
+          name: adults
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 9
+            default: 1
+          description: Number of adult passengers
+          
+        - in: query
+          name: children
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 9
+            default: 0
+          description: Number of child passengers
+          
+        - in: query
+          name: infants
+          schema:
+            type: integer
+            minimum: 0
+            maximum: 9
+            default: 0
+          description: Number of infant passengers
+          
+        - in: query
+          name: selected_cabins
+          schema:
+            type: string
+            enum: [M, W, C, F]
+            default: M
+          description: |
+            Preferred cabin class:
+            * M - Economy
+            * W - Premium Economy  
+            * C - Business
+            * F - First Class
+          
+        - in: query
+          name: curr
+          schema:
+            type: string
+            default: EUR
+          description: Currency for prices in response
+          example: USD
+          
+        - in: query
+          name: locale
+          schema:
+            type: string
+          description: Language for city names and deeplinks
+          example: en
+          
+        - in: query
+          name: max_stopovers
+          schema:
+            type: integer
+            minimum: 0
+          description: Maximum number of stopovers allowed
+          
+        - in: query
+          name: max_sector_stopovers
+          schema:
+            type: integer
+            minimum: 0
+          description: Maximum number of stopovers per sector
+          
+        - in: query
+          name: vehicle_type
+          schema:
+            type: string
+            enum: [aircraft, bus, train]
+            default: aircraft
+          description: Type of transport vehicle
+          
+        - in: query
+          name: sort
+          schema:
+            type: string
+            enum: [price, quality, duration, date, popularity]
+            default: price
+          description: Sort results by specified criteria
+          
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 200
+          description: Maximum number of results to return
+          
+      responses:
+        '200':
+          description: List of itineraries matching search criteria
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  search_id:
+                    type: string
+                  currency:
+                    type: string
+                  fx_rate:
+                    type: number
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Itinerary'
+                  _results:
+                    type: integer
+                  all_airlines:
+                    type: array
+                    items:
+                      type: string
+                      
+        '400':
+          description: Bad request - invalid parameters
+          
+        '422':
+          description: Invalid locations specified
+          
+        '500':
+          description: Internal server error
+
+  /flights/multicity:
+    post:
+      summary: Search for multicity itineraries 
+      description: Search for itineraries with multiple stops in specified order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                via_blocks:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ViaBlock'
+      parameters:
+        - $ref: '#/components/parameters/partner'
+        - $ref: '#/components/parameters/partnerMarket'
+        - $ref: '#/components/parameters/selectedCabins'
+        - $ref: '#/components/parameters/adults'
+        - $ref: '#/components/parameters/children'
+        - $ref: '#/components/parameters/infants'
+        - $ref: '#/components/parameters/currency'
+        - $ref: '#/components/parameters/locale'
+      responses:
+        '200':
+          description: List of multicity itineraries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Bad request
+        '422':
+          description: Invalid locations
+        '500':
+          description: Internal server error
+
+  /traveling_salesman:
+    post:
+      summary: Search for nomad itineraries
+      description: Find optimal routes visiting multiple destinations in any order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                via:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ViaLocation'
+      parameters:
+        - $ref: '#/components/parameters/partner'
+        - $ref: '#/components/parameters/partnerMarket'
+        - $ref: '#/components/parameters/flyFrom'
+        - $ref: '#/components/parameters/flyTo'
+        - $ref: '#/components/parameters/dateFrom'
+        - $ref: '#/components/parameters/dateTo'
+        - $ref: '#/components/parameters/selectedCabins'
+        - $ref: '#/components/parameters/adults'
+        - $ref: '#/components/parameters/currency'
+        - $ref: '#/components/parameters/locale'
+      responses:
+        '200':
+          description: List of nomad itineraries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Bad request
+        '422':
+          description: Invalid locations
+        '500':
+          description: Internal server error
+
+components:
+  parameters:
+    partner:
+      in: query
+      name: partner
+      required: true
+      schema:
+        type: string
+      description: Partner/affiliate ID
+      
+    partnerMarket:
+      in: query
+      name: partner_market
+      schema:
+        type: string
+        minLength: 2
+        maxLength: 2
+      description: Partner market country code (ISO 3166-1 alpha-2)
+      
+    selectedCabins:
+      in: query
+      name: selected_cabins
+      schema:
+        type: string
+        enum: [M, W, C, F]
+        default: M
+      description: |
+        Preferred cabin class:
+        * M - Economy
+        * W - Premium Economy
+        * C - Business 
+        * F - First Class
+        
+    adults:
+      in: query
+      name: adults
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 9
+        default: 1
+      description: Number of adult passengers
+      
+    children:
+      in: query
+      name: children  
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 9
+        default: 0
+      description: Number of child passengers
+      
+    infants:
+      in: query
+      name: infants
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 9
+        default: 0
+      description: Number of infant passengers
+      
+    currency:
+      in: query
+      name: curr
+      schema:
+        type: string
+        default: EUR
+      description: Currency for prices
+      
+    locale:
+      in: query
+      name: locale
+      schema:
+        type: string
+      description: Language for city names and deeplinks
+      
+    flyFrom:
+      in: query
+      name: fly_from
+      schema:
+        type: string
+      description: Departure location(s)
+      
+    flyTo:
+      in: query
+      name: fly_to  
+      schema:
+        type: string
+      description: Destination location(s)
+      
+    dateFrom:
+      in: query
+      name: date_from
+      schema:
+        type: string
+        format: date
+      description: Departure date from
+      
+    dateTo:
+      in: query
+      name: date_to
+      schema:
+        type: string
+        format: date
+      description: Departure date to
+
+  schemas:
+    Itinerary:
+      type: object
+      properties:
+        id:
+          type: string
+        price:
+          type: number
+        route:
+          type: array
+          items:
+            $ref: '#/components/schemas/RouteSegment'
+        booking_token:
+          type: string
+        deep_link:
+          type: string
+          
+    RouteSegment:
+      type: object
+      properties:
+        id:
+          type: string
+        combination_id:
+          type: string
+        cityFrom:
+          type: string
+        cityTo:  
+          type: string
+        flyFrom:
+          type: string
+        flyTo:
+          type: string
+        airline:
+          type: string
+        flight_no:
+          type: string
+        departure:
+          type: string
+          format: date-time
+        arrival:
+          type: string
+          format: date-time
+          
+    ViaBlock:
+      type: object
+      properties:
+        cityFrom:
+          type: string
+        cityTo:
+          type: string
+        dateFrom:
+          type: string
+          format: date
+        dateTo:  
+          type: string
+          format: date
+          
+    ViaLocation:
+      type: object
+      properties:
+        location:
+          type: string
+        min_nights:
+          type: integer
+        max_nights:
+          type: integer
+          
+    SearchResponse:
+      type: object
+      properties:
+        search_id:
+          type: string
+        currency:
+          type: string
+        fx_rate:
+          type: number
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Itinerary'
+        _results:
+          type: integer
+        all_airlines:
+          type: array
+          items:
+            type: string
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: apikey

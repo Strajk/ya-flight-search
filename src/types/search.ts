@@ -55,6 +55,8 @@ export type SearchInput = z.infer<typeof SearchInputSchema>
 export interface ChatMessage {
   role: "user" | "assistant"
   content: string
+  flights?: Flight[]
+  suggestedFilters?: SuggestedFilter[]
 }
 
 // Important: Avoid overspecifying, as it's passed to OpenAI
@@ -113,10 +115,10 @@ export type FormUpdates = z.infer<typeof FormUpdatesSchema>
 export const SearchResponseSchema = z.object({
   messages: z.array(z.object({
     role: z.enum(["user", "assistant"]),
-    content: z.string()
+    content: z.string(),
+    flights: z.array(FlightSchema).optional(),
+    suggestedFilters: z.array(SuggestedFilterSchema).optional(),
   })),
-  flights: z.array(FlightSchema),
-  suggestedFilters: z.array(SuggestedFilterSchema),
   formUpdates: FormUpdatesSchema.optional(),
 })
 

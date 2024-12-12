@@ -1,19 +1,21 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
-
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const badgeVariants = cva(
-  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
+  "inline-flex items-center gap-2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-ring focus:ring-offset-2 font-medium text-sm transition-colors focus:outline-none",
   {
     variants: {
       variant: {
         default:
-          "border-transparent bg-primary text-primary-foreground hover:bg-primary/80",
+          "border-transparent bg-primary text-primary-foreground",
         secondary:
-          "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          "border-transparent bg-[#F47B20] text-white",
+        success:
+          "border-transparent bg-[#00875A] text-white",
         destructive:
-          "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
+          "border-transparent bg-destructive text-destructive-foreground",
         outline: "text-foreground",
       },
     },
@@ -25,11 +27,23 @@ const badgeVariants = cva(
 
 export interface BadgeProps
   extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+    VariantProps<typeof badgeVariants> {
+  onClose?: () => void
+}
 
-function Badge({ className, variant, ...props }: BadgeProps) {
+function Badge({ className, variant, onClose, children, ...props }: BadgeProps) {
   return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
+    <div className={cn(badgeVariants({ variant }), className)} {...props}>
+      {children}
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="hover:bg-black/10 ml-1 p-0.5 rounded-full"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      )}
+    </div>
   )
 }
 

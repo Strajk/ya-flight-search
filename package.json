@@ -6,7 +6,10 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:debug": "playwright test --debug"
   },
   "dependencies": {
     "@faker-js/faker": "9.3.0",
@@ -39,13 +42,14 @@
     "@radix-ui/react-toggle-group": "1.1.0",
     "@radix-ui/react-tooltip": "1.1.4",
     "@tanstack/react-query": "^5.28.4",
+    "axios": "^1.7.9",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "cmdk": "1.0.0",
     "date-fns": "3.6.0",
     "dedent": "1.5.3",
     "embla-carousel-react": "8.5.1",
-    "faker": "6.6.6",
+    "faker": "^5.5.3",
     "input-otp": "1.4.1",
     "lucide-react": "0.468.0",
     "next": "15.1.0",
@@ -60,11 +64,13 @@
     "sonner": "1.7.1",
     "tailwind-merge": "2.5.5",
     "tailwindcss-animate": "1.0.7",
+    "tsx": "^4.19.2",
     "vaul": "1.1.1",
     "zod": "3.24.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "1.49.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

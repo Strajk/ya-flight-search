@@ -38,7 +38,7 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
     }
   }
 
-  if (isLoading) {
+  if (isLoading && !results) {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -58,25 +58,23 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
   }
 
   return (
-    <div className="p-4">
-      <Card className="p-4">
-        <div className="space-y-1">
-          {/* Message */}
-          <div className="flex gap-3">
-            <MessageCircle className="flex-shrink-0 mt-1 w-5 h-5" />
-            <div className="dark:prose-invert prose prose-sm">
-              {results.messages.map((message) => (
-                <p key={message.role}>
+    <div className="space-y-4 p-4">
+      {results.messages.map((message, index) => (
+        <Card key={`${message.role}-${index}`} className="p-4">
+          <div className="space-y-4">
+            {/* Message */}
+            <div className="flex gap-3">
+              <MessageCircle className="flex-shrink-0 mt-1 w-5 h-5" />
+              <div className="dark:prose-invert prose prose-sm">
+                <p>
                   <strong>{message.role === "user" ? "You" : "Assistant"}:</strong> {message.content}
                 </p>
-              ))}
+              </div>
             </div>
-          </div>
 
-          {/* Flights */}
-          {results.flights && results.flights.length > 0 && (
-            <>
-              <div className="relative">
+            {/* Flights - Only show for assistant messages with flights */}
+            {message.role === "assistant" && message.flights && message.flights.length > 0 && (
+              <div className="relative pt-4">
                 {/* Scroll buttons */}
                 {canScrollLeft && (
                   <Button
@@ -98,14 +96,14 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
                     <ChevronRight className="w-4 h-4" />
                   </Button>
                 )}
-                
+
                 {/* Scrollable container */}
                 <div
                   ref={scrollContainerRef}
                   className="flex gap-4 snap-mandatory snap-x overflow-x-auto scrollbar-hide"
                   onScroll={() => checkScrollButtons()}
                 >
-                  {results.flights.map((flight) => (
+                  {message.flights.map((flight) => (
                     <Card 
                       key={flight.id} 
                       className="flex-none bg-muted/50 hover:bg-muted/70 p-6 snap-start w-[380px] sm:w-[400px] transition-colors"
@@ -171,48 +169,46 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
                   ))}
                 </div>
               </div>
-            </>
-          )}
+            )}
 
-          {/* Suggested Filters */}
-          {results.suggestedFilters && results.suggestedFilters.length > 0 && (
-            <>
-              <div>
+            {/* Suggested Filters - Only show for assistant messages with filters */}
+            {message.role === "assistant" && message.suggestedFilters && message.suggestedFilters.length > 0 && (
+              <div className="pt-4">
                 <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm">
                   <Filter className="w-4 h-4" />
                   <span>Try filtering by:</span>
                 </div>
-                <div className="relative">
-                  <div className="flex gap-2 snap-mandatory snap-x pb-2 overflow-x-auto scrollbar-hide">
-                    {results.suggestedFilters.map((filter) => (
-                      <Button
-                        key={filter.id}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onFilterClick?.(filter)}
-                        title={filter.prompt}
-                        className="flex-none bg-background/50 hover:bg-background/80 px-2 py-0.5 snap-start h-auto text-xs"
-                      >
-                        {filter.label}
-                      </Button>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  {message.suggestedFilters.map((filter) => (
+                    <Button
+                      key={filter.id}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onFilterClick?.(filter)}
+                      title={filter.prompt}
+                      className="bg-background/50 hover:bg-background/80 px-2 py-0.5 h-auto text-xs"
+                    >
+                      {filter.label}
+                    </Button>
+                  ))}
                 </div>
               </div>
-            </>
-          )}
+            )}
 
-          {/* No flights message */}
-          {(!results.flights || results.flights.length === 0) && (
-            <>
-              <Separator className="my-4" />
-              <div className="text-center text-muted-foreground">
-                No flights found matching your criteria.
-              </div>
-            </>
-          )}
-        </div>
-      </Card>
+            {/* No flights message - Only show for assistant messages that explicitly mention no flights */}
+            {message.role === "assistant" && 
+             (!message.flights || message.flights.length === 0) && 
+             message.content.toLowerCase().includes("no flights") && (
+              <>
+                <Separator className="my-4" />
+                <div className="text-center text-muted-foreground">
+                  No flights found matching your criteria.
+                </div>
+              </>
+            )}
+          </div>
+        </Card>
+      ))}
     </div>
   )
 }

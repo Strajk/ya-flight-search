@@ -241,3 +241,160 @@ MANUAL: Disable eslint rules
   - Removed horizontal scrolling in favor of wrapping
   - Added consistent padding and margins
   - Made buttons more clickable with better height
+
+## API Response Structure Refactoring
+- Restructured API response to include flights and suggestedFilters within messages
+- Updated ChatMessage and SearchResponse types to support the new structure
+- Modified the API endpoint to include flights and filters in assistant messages
+- Updated SearchResults component to handle the new structure:
+  - Added logic to find the last assistant message with flights/filters
+  - Updated rendering logic to use data from the message context
+  - Maintained all existing functionality while adapting to new structure
+  - Improved code organization and readability
+
+## Chat Interface Enhancement
+- Modified FlightSearch component to maintain a continuous chat log:
+  - Removed separate searchResults state in favor of unified messages state
+  - Updated message handling to properly append new messages
+  - Ensured filter clicks and chat messages both contribute to the chat log
+  - Improved state management for better UX
+  - Maintained proper ordering of messages in the conversation
+  - Fixed message duplication issues
+  - Simplified the component's state management
+  - Improved error handling and user feedback
+
+## Chat Interface Sequential Display Enhancement
+- Improved chat message display to show messages in sequence:
+  - Each message is now displayed in its own card
+  - Assistant messages include associated flights and filters below the text
+  - User messages are cleanly integrated into the conversation flow
+  - Added proper spacing and visual hierarchy between messages
+  - Improved the layout of flights and filters within each message
+  - Fixed message duplication issues
+  - Added proper padding and margins for better readability
+  - Made filters wrap instead of scroll for better usability
+  - Improved visual distinction between user and assistant messages
+
+## Fixed Empty Response Bug
+- Added message filtering logic to prevent empty responses:
+  - Introduced processedMessages to filter incomplete assistant messages
+  - Only show assistant messages that have flights or explicit "no flights" content
+  - Fixed issue with premature "No flights found" message
+  - Improved conditions for showing no flights message
+  - Better handling of message state transitions
+  - Maintained proper chat flow without interruptions
+  - Enhanced user experience by removing confusing empty states
+  - Added more precise conditions for message display
+
+## Fixed Message Duplication Bug
+- Fixed issue with duplicate user messages in chat:
+  - Removed premature message state update in handleChatMessage
+  - Now relying on API response for complete message history
+  - Improved message state management
+  - Ensured consistent chat history between client and server
+  - Fixed race conditions in message updates
+  - Better handling of message state synchronization
+  - Enhanced user experience with cleaner chat flow
+  - Maintained proper message ordering
+
+## Fixed Conversation History Persistence
+- Improved message state management to maintain chat history:
+  - Now adding user messages immediately to the chat
+  - Only appending new assistant messages from API responses
+  - Maintaining proper message order and history
+  - Fixed issue with message history being reset
+  - Better handling of message state updates
+  - Improved user experience with immediate feedback
+  - Ensured conversation continuity
+  - Proper handling of both user and assistant messages
+
+## Design Update to Match Screenshot
+- Updated color scheme in globals.css:
+  - Set primary color to teal (HSL: 168 100% 33%)
+  - Adjusted border colors and radius
+  - Updated text colors and muted states
+- Enhanced button component:
+  - Increased padding and height
+  - Added shadow
+  - Rounded corners (lg)
+- Improved badge/chip component:
+  - Added close button functionality
+  - Set specific colors for Madrid (teal) and Dublin (orange)
+  - Adjusted padding and text size
+  - Rounded corners (lg)
+
+## Search Form Redesign
+- Completely redesigned search form to match screenshot:
+  - Added trip type selector (Return/One-way)
+  - Added passengers and bags counter with dividers
+  - Replaced input fields with location badges
+  - Added "Add more" text for locations
+  - Updated date display to show range
+  - Improved typography with larger headings
+  - Added subtle shadows and rounded corners
+  - Made all elements full-width
+  - Added proper spacing between sections
+
+## Added Passenger and Bags Selector Popup
+- Created new PassengerSelector component:
+  - Added popover for editing passengers and bags
+  - Added increment/decrement buttons with proper limits
+  - Added descriptive labels and helper text
+  - Added proper spacing and layout
+  - Maintained consistent styling with the rest of the UI
+- Updated FlightSearch component:
+  - Integrated PassengerSelector component
+  - Maintained proper state management
+  - Added proper button styling and hover states
+  - Ensured proper accessibility
+
+## Enhanced Date Picker Implementation
+- Updated DatePicker component:
+  - Added fromDate and toDate props for date constraints
+  - Changed date format to be more concise
+  - Added default fromDate to prevent selecting past dates
+- Enhanced FlightSearch component:
+  - Added date picker modal with backdrop
+  - Added proper date constraints between departure and return dates
+  - Added validation to clear return date if it's before new departure date
+  - Improved date display format in the search form
+
+## Fixed Filter Message Handling (2024-03-19)
+- Fixed issue with filter clicks not updating messages on FE
+- Removed premature message state updates
+- Made message handling consistent between search and chat operations
+- Ensured messages are only updated after successful API response
+- Removed unnecessary console.log statements
+- Added proper error handling for chat operations
+- Maintained form update functionality for both search and chat
+
+## Refactored Search Callbacks (2024-03-19)
+- Extracted reusable success and error handlers from searchMutation.mutate calls
+- Created handleSearchSuccess and handleSearchError functions
+- Updated both onSubmit and handleChatMessage to use the new handlers
+- Improved code organization and reduced duplication
+- Maintained consistent error handling and form updates across all search operations
+
+## Implemented Playwright Tests (2024-03-19)
+- Added Playwright test configuration with multi-browser support
+- Created comprehensive test suite covering:
+  - Basic search workflow
+  - No results handling
+  - Responsive design verification
+- Added test scripts to package.json
+- Tests verify:
+  - Form interactions (date picker, passenger selector)
+  - Search results display
+  - Filter functionality
+  - Chat interaction
+  - Mobile responsiveness
+  - Error states
+
+## Added Playwright Artifacts to .gitignore (2024-03-19)
+- Added Playwright-specific entries to .gitignore
+- Excluded test artifacts directories:
+  - /test-results/
+  - /playwright-report/
+  - /blob-report/
+  - /playwright/.cache/
+- Ensured test artifacts won't be committed to version control

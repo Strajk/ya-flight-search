@@ -1,13 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, MapPin, Search, Briefcase, Users, AlertCircle } from "lucide-react"
+import { Calendar, Plane, Search } from "lucide-react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { Badge } from "@/components/ui/badge"
 import {
   Select,
   SelectContent,
@@ -16,29 +14,33 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { SearchResults } from "@/components/search-results"
-import { AIPrompt } from "@/components/ai-prompt"
 import { DatePicker } from "@/components/date-picker"
+import { PassengerSelector } from "@/components/passenger-selector"
 import { useSearchFlights } from "@/lib/api"
-import { SearchFormData, SearchFormDataSchema, ChatMessage, SearchState, SuggestedFilter } from "@/types/search"
+import { SearchFormData, SearchFormDataSchema, ChatMessage, SearchState } from "@/types/search"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
+import { AIPrompt } from "./ai-prompt"
+import { createRoot } from "react-dom/client"
+import { Card } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { format } from "date-fns"
 
-// Example values matching the API example
 const defaultFormValues: SearchFormData = {
-  departurePlace: "PRG",
-  returnPlace: "LON",
-  departureDate: "2024-03-01",
-  returnDate: "2024-03-01",
+  departurePlace: "Madrid",
+  returnPlace: "Dublin",
+  departureDate: "2024-01-25",
+  returnDate: "2024-02-01",
 }
 
 export function FlightSearch() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [showResults, setShowResults] = useState(false)
   const { toast } = useToast()
   const sessionId = "test123" // In production, this should be generated uniquely
+  const [passengers, setPassengers] = useState(1)
+  const [bags, setBags] = useState(0)
 
   const {
-    register,
     handleSubmit,
     formState: { errors },
     setValue,
@@ -51,51 +53,43 @@ export function FlightSearch() {
 
   const searchMutation = useSearchFlights()
 
-  const onSubmit = (formData: SearchFormData) => {
-    console.log("Form data:", formData)
+  const handleSearchSuccess = (data: any) => {
+    console.log("[FlightSearch:onSuccess]", data)
+    if (data.formUpdates) {
+      Object.entries(data.formUpdates).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          setValue(key as keyof SearchFormData, value as string)
+        }
+      })
+      trigger()
+    }
 
+    if (data.messages && data.messages.length > 0) {
+      console.log("[FlightSearch:onSuccess:messages]", data.messages)
+      setMessages(data.messages)
+    }
+  }
+
+  const handleSearchError = (error: Error) => {
+    console.error("Search error:", error)
+    toast({
+      variant: "destructive",
+      title: "Search failed",
+      description: "Failed to search for flights. Please try again.",
+    })
+  }
+
+  const onSubmit = (formData: SearchFormData) => {
     const searchState: SearchState = {
       sessionId,
-      formData: {
-        departurePlace: formData.departurePlace,
-        returnPlace: formData.returnPlace,
-        departureDate: formData.departureDate,
-        returnDate: formData.returnDate,
-      },
+      formData,
       messages,
       trigger: "search",
     }
 
     searchMutation.mutate(searchState, {
-      onSuccess: (data) => {
-        if (data.message) {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: data.message },
-          ])
-        }
-
-        // Update form values if formUpdates are present
-        if (data.formUpdates) {
-          Object.entries(data.formUpdates).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-              setValue(key as keyof SearchFormData, value as string)
-            }
-          })
-          // Trigger validation after form updates
-          trigger()
-        }
-
-        setShowResults(true)
-      },
-      onError: (error) => {
-        console.error("Search error:", error)
-        toast({
-          variant: "destructive",
-          title: "Search failed",
-          description: "Failed to search for flights. Please try again.",
-        })
-      },
+      onSuccess: handleSearchSuccess,
+      onError: handleSearchError,
     })
   }
 
@@ -104,7 +98,8 @@ export function FlightSearch() {
       role: "user",
       content: message,
     }
-    setMessages((prev) => [...prev, newMessage])
+
+    setMessages(prev => [...prev, newMessage])
 
     const searchState: SearchState = {
       sessionId,
@@ -119,113 +114,148 @@ export function FlightSearch() {
     }
 
     searchMutation.mutate(searchState, {
-      onSuccess: (data) => {
-        if (data.message) {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: data.message },
-          ])
-        }
-
-        // Update form values if formUpdates are present
-        if (data.formUpdates) {
-          Object.entries(data.formUpdates).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-              setValue(key as keyof SearchFormData, value as string)
-            }
-          })
-          // Trigger validation after form updates
-          trigger()
-        }
-
-        setShowResults(true)
-      },
-      onError: (error) => {
-        console.error("Chat error:", error)
-        toast({
-          variant: "destructive",
-          title: "Chat failed",
-          description: "Failed to process your message. Please try again.",
-        })
-      },
+      onSuccess: handleSearchSuccess,
+      onError: handleSearchError,
     })
   }
 
-  const handleFilterClick = (filter: SuggestedFilter) => {
-    const message = `Show me flights that are ${filter.label.toLowerCase()}`
-    handleChatMessage(message)
-  }
-
-  const returnDate = watch("returnDate")
-  const parsedReturnDate = returnDate ? new Date(returnDate) : undefined
+  const departurePlace = watch("departurePlace")
+  const returnPlace = watch("returnPlace")
 
   return (
     <div className="flex flex-col h-dvh">
-      <div className="flex-none space-y-4 p-4">
-        <h1 className="font-bold text-2xl">Where do we fly next?</h1>
+      <div className="flex-none space-y-6 p-4">
+        <div>
+          <h1 className="font-semibold text-[2rem] leading-tight">Hello 👋</h1>
+          <h2 className="font-semibold text-[2rem] leading-tight">Where do we fly next?</h2>
+        </div>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="gap-4 grid">
-            <div className="relative">
-              <Label htmlFor="departurePlace">From</Label>
-              <div className="relative">
-                <MapPin className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="departurePlace"
-                  placeholder="Departure city or airport"
-                  className={cn("pl-9", errors.departurePlace && "border-destructive")}
-                  {...register("departurePlace")}
-                />
-              </div>
-              {errors.departurePlace && (
-                <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.departurePlace.message}
-                </p>
-              )}
+          <div className="flex items-center gap-2 bg-white shadow-sm p-4 rounded-lg">
+            <Select defaultValue="return">
+              <SelectTrigger className="border-0 hover:bg-transparent p-0 focus:ring-0 w-[120px] h-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="return">Return</SelectItem>
+                <SelectItem value="one-way">One-way</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="bg-border w-[1px] h-6" />
+
+            <PassengerSelector
+              passengers={passengers}
+              bags={bags}
+              onPassengersChange={setPassengers}
+              onBagsChange={setBags}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Plane className="w-4 h-4 text-muted-foreground" />
+              <Badge variant="success" onClose={() => setValue("departurePlace", "")}>
+                {departurePlace}
+              </Badge>
             </div>
 
-            <div className="relative">
-              <Label htmlFor="returnPlace">To</Label>
-              <div className="relative">
-                <MapPin className="top-3 left-3 absolute w-4 h-4 text-muted-foreground" />
-                <Input
-                  id="returnPlace"
-                  placeholder="Arrival city or airport"
-                  className={cn("pl-9", errors.returnPlace && "border-destructive")}
-                  {...register("returnPlace")}
-                />
-              </div>
-              {errors.returnPlace && (
-                <p className="flex items-center gap-2 mt-1 text-destructive text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  {errors.returnPlace.message}
-                </p>
-              )}
+            <div className="flex items-center gap-2">
+              <Plane className="w-4 h-4 text-muted-foreground" />
+              <Badge variant="secondary" onClose={() => setValue("returnPlace", "")}>
+                {returnPlace}
+              </Badge>
+              <span className="text-muted-foreground text-sm">Add more</span>
             </div>
+          </div>
 
-            <div className="gap-4 grid sm:grid-cols-2">
-              <div>
-                <Label>Departure</Label>
-                <DatePicker
-                  date={watch("departureDate") ? new Date(watch("departureDate")) : undefined}
-                  setDate={(date) => {
-                    setValue("departureDate", date ? date.toISOString().split("T")[0] : "")
-                    trigger("departureDate")
-                  }}
-                />
-              </div>
-              <div>
-                <Label>Return</Label>
-                <DatePicker
-                  date={parsedReturnDate}
-                  setDate={(date) => {
-                    setValue("returnDate", date ? date.toISOString().split("T")[0] : null)
-                    trigger("returnDate")
-                  }}
-                />
-              </div>
-            </div>
+          <div 
+            className="flex items-center gap-2 bg-white shadow-sm p-4 rounded-lg cursor-pointer"
+            onClick={() => {
+              const departureDate = watch("departureDate") ? new Date(watch("departureDate")) : undefined
+              const returnDate = watch("returnDate") ? new Date(watch("returnDate")) : undefined
+              
+              const backdrop = document.createElement("div")
+              backdrop.style.position = "fixed"
+              backdrop.style.top = "0"
+              backdrop.style.left = "0"
+              backdrop.style.width = "100%"
+              backdrop.style.height = "100%"
+              backdrop.style.backgroundColor = "rgba(0, 0, 0, 0.5)"
+              backdrop.style.zIndex = "40"
+              document.body.appendChild(backdrop)
+              
+              const popover = document.createElement("div")
+              popover.style.position = "fixed"
+              popover.style.top = "50%"
+              popover.style.left = "50%"
+              popover.style.transform = "translate(-50%, -50%)"
+              popover.style.zIndex = "50"
+              document.body.appendChild(popover)
+              
+              const root = createRoot(popover)
+              root.render(
+                <Card className="p-4 w-[320px]">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Departure date</Label>
+                      <DatePicker
+                        date={departureDate}
+                        setDate={(date) => {
+                          if (date) {
+                            setValue("departureDate", format(date, "yyyy-MM-dd"))
+                            // If return date is before departure date, clear it
+                            if (returnDate && returnDate < date) {
+                              setValue("returnDate", null)
+                            }
+                            trigger()
+                          }
+                        }}
+                        fromDate={new Date()}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Return date</Label>
+                      <DatePicker
+                        date={returnDate}
+                        setDate={(date) => {
+                          if (date) {
+                            setValue("returnDate", format(date, "yyyy-MM-dd"))
+                            trigger()
+                          }
+                        }}
+                        fromDate={departureDate || new Date()}
+                      />
+                    </div>
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        document.body.removeChild(backdrop)
+                        document.body.removeChild(popover)
+                        root.unmount()
+                      }}
+                    >
+                      Done
+                    </Button>
+                  </div>
+                </Card>
+              )
+            }}
+          >
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm">
+              {watch("departureDate") && new Date(watch("departureDate")).toLocaleDateString("en-US", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              })}
+              {" to "}
+              {watch("returnDate") && new Date(watch("returnDate")).toLocaleDateString("en-US", {
+                weekday: "short",
+                day: "numeric",
+                month: "short",
+              })}
+            </span>
           </div>
 
           <Button 
@@ -233,20 +263,17 @@ export function FlightSearch() {
             className="w-full"
             disabled={searchMutation.isPending}
           >
-            <Search className="mr-2 w-4 h-4" />
-            {searchMutation.isPending ? "Searching..." : "Search Flights"}
+            {searchMutation.isPending ? "Searching..." : "Search"}
           </Button>
         </form>
       </div>
 
       <div className="flex-1 overflow-auto">
-        {showResults && (
-          <SearchResults
-            results={searchMutation.data}
-            onFilterClick={handleFilterClick}
-            isLoading={searchMutation.isPending}
-          />
-        )}
+        <SearchResults
+          results={messages.length > 0 ? { messages, formUpdates: searchMutation.data?.formUpdates } : null}
+          onFilterClick={(filter) => handleChatMessage(filter.prompt)}
+          isLoading={searchMutation.isPending}
+        />
       </div>
 
       <AIPrompt className="flex-none" onMessage={handleChatMessage} />
