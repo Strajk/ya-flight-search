@@ -45,7 +45,7 @@
     "date-fns": "3.6.0",
     "dedent": "1.5.3",
     "embla-carousel-react": "8.5.1",
-    "faker": "6.6.6",
+    "faker": "^5.5.3",
     "input-otp": "1.4.1",
     "lucide-react": "0.468.0",
     "next": "15.1.0",

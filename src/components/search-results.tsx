@@ -38,7 +38,7 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
     }
   }
 
-  if (isLoading) {
+  if (isLoading && !results) {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="flex flex-col items-center gap-2 text-muted-foreground">
@@ -65,8 +65,8 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
           <div className="flex gap-3">
             <MessageCircle className="flex-shrink-0 mt-1 w-5 h-5" />
             <div className="dark:prose-invert prose prose-sm">
-              {results.messages.map((message) => (
-                <p key={message.role}>
+              {results.messages.map((message, index) => (
+                <p key={`${message.role}-${index}`}>
                   <strong>{message.role === "user" ? "You" : "Assistant"}:</strong> {message.content}
                 </p>
               ))}
