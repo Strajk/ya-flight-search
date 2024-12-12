@@ -21,6 +21,10 @@ import { SearchFormData, SearchFormDataSchema, ChatMessage, SearchState } from "
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import { AIPrompt } from "./ai-prompt"
+import { createRoot } from "react-dom/client"
+import { Card } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { format } from "date-fns"
 
 const defaultFormValues: SearchFormData = {
   departurePlace: "Madrid",
@@ -159,7 +163,79 @@ export function FlightSearch() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 bg-white shadow-sm p-4 rounded-lg">
+          <div 
+            className="flex items-center gap-2 bg-white shadow-sm p-4 rounded-lg cursor-pointer"
+            onClick={() => {
+              const departureDate = watch("departureDate") ? new Date(watch("departureDate")) : undefined
+              const returnDate = watch("returnDate") ? new Date(watch("returnDate")) : undefined
+              
+              const backdrop = document.createElement("div")
+              backdrop.style.position = "fixed"
+              backdrop.style.top = "0"
+              backdrop.style.left = "0"
+              backdrop.style.width = "100%"
+              backdrop.style.height = "100%"
+              backdrop.style.backgroundColor = "rgba(0, 0, 0, 0.5)"
+              backdrop.style.zIndex = "40"
+              document.body.appendChild(backdrop)
+              
+              const popover = document.createElement("div")
+              popover.style.position = "fixed"
+              popover.style.top = "50%"
+              popover.style.left = "50%"
+              popover.style.transform = "translate(-50%, -50%)"
+              popover.style.zIndex = "50"
+              document.body.appendChild(popover)
+              
+              const root = createRoot(popover)
+              root.render(
+                <Card className="p-4 w-[320px]">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Departure date</Label>
+                      <DatePicker
+                        date={departureDate}
+                        setDate={(date) => {
+                          if (date) {
+                            setValue("departureDate", format(date, "yyyy-MM-dd"))
+                            // If return date is before departure date, clear it
+                            if (returnDate && returnDate < date) {
+                              setValue("returnDate", null)
+                            }
+                            trigger()
+                          }
+                        }}
+                        fromDate={new Date()}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Return date</Label>
+                      <DatePicker
+                        date={returnDate}
+                        setDate={(date) => {
+                          if (date) {
+                            setValue("returnDate", format(date, "yyyy-MM-dd"))
+                            trigger()
+                          }
+                        }}
+                        fromDate={departureDate || new Date()}
+                      />
+                    </div>
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        document.body.removeChild(backdrop)
+                        document.body.removeChild(popover)
+                        root.unmount()
+                      }}
+                    >
+                      Done
+                    </Button>
+                  </div>
+                </Card>
+              )
+            }}
+          >
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span className="text-sm">
               {watch("departureDate") && new Date(watch("departureDate")).toLocaleDateString("en-US", {

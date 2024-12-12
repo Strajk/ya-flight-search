@@ -77,3 +77,6 @@ The user requested to make the passengers and bags counters clickable to open a 
 - Proper limits (1-9 for passengers, 0-9 for bags)
 - Clear labels and helper text
 - Consistent styling with the app's design system
+
+## 2024-03-19 15:04:00
+search form date input should open datepicker
