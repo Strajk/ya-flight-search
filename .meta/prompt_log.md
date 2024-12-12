@@ -119,3 +119,10 @@ const onSubmit = (formData: SearchFormData) => {
     })
   }
 out so we can reuse them in all searchMutation.mutate calls
+
+## 2024-03-19: Ignore Playwright Artifacts
+Added Playwright-specific entries to .gitignore to exclude test artifacts:
+- /test-results/
+- /playwright-report/
+- /blob-report/
+- /playwright/.cache/
