@@ -57,22 +57,9 @@ export function SearchResults({ results, onFilterClick, isLoading }: SearchResul
     )
   }
 
-  // Group messages by type and filter out incomplete assistant messages
-  const processedMessages = results.messages.reduce<ChatMessage[]>((acc, message) => {
-    if (message.role === "user") {
-      acc.push(message)
-    } else if (message.role === "assistant") {
-      // Only include assistant messages that have either flights or a clear "no flights" message
-      if (message.flights?.length || message.content.toLowerCase().includes("no flights")) {
-        acc.push(message)
-      }
-    }
-    return acc
-  }, [])
-
   return (
     <div className="space-y-4 p-4">
-      {processedMessages.map((message, index) => (
+      {results.messages.map((message, index) => (
         <Card key={`${message.role}-${index}`} className="p-4">
           <div className="space-y-4">
             {/* Message */}

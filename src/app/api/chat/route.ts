@@ -2,7 +2,7 @@ import {NextResponse} from "next/server"
 import OpenAI from "openai"
 import {zodResponseFormat} from "openai/helpers/zod"
 import {z} from "zod"
-import {SearchFormDataSchema, SuggestedFilterSchema,} from "@/types/search"
+import {FlightSchema, SearchFormDataSchema, SuggestedFilterSchema,} from "@/types/search"
 import { flightsPrompt, filtersPrompt, formUpdatesPrompt } from "@/prompts/flight-search"
 import dedent from "dedent"
 import {fakeApi, kiwiSearchApiSchema} from "@/app/api/kiwi";
@@ -120,7 +120,9 @@ export async function POST(request: Request) {
       formData: SearchFormDataSchema,
       messages: z.array(z.object({
         role: z.enum(["user", "assistant"]),
-        content: z.string()
+        content: z.string(),
+        flights: z.array(FlightSchema).optional(),
+        suggestedFilters: z.array(SuggestedFilterSchema).optional()
       })),
       trigger: z.string()
     })

@@ -73,10 +73,7 @@ export function FlightSearch() {
         }
 
         if (data.messages && data.messages.length > 0) {
-          const newAssistantMessage = data.messages[data.messages.length - 1]
-          if (newAssistantMessage.role === "assistant") {
-            setMessages(prev => [...prev, newAssistantMessage])
-          }
+          setMessages(data.messages)
         }
       },
       onError: (error) => {
