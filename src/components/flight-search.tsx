@@ -33,7 +33,7 @@ const defaultFormValues: SearchFormData = {
 
 export function FlightSearch() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [showResults, setShowResults] = useState(false)
+  const [searchResults, setSearchResults] = useState<Array<typeof searchMutation.data>>([])
   const { toast } = useToast()
   const sessionId = "test123" // In production, this should be generated uniquely
 
@@ -86,7 +86,7 @@ export function FlightSearch() {
           trigger()
         }
 
-        setShowResults(true)
+        setSearchResults(prev => [...prev, data])
       },
       onError: (error) => {
         console.error("Search error:", error)
@@ -138,7 +138,14 @@ export function FlightSearch() {
           trigger()
         }
 
-        setShowResults(true)
+        // Update the last result set instead of adding a new one
+        setSearchResults(prev => {
+          const newResults = [...prev]
+          if (newResults.length > 0) {
+            newResults[newResults.length - 1] = data
+          }
+          return newResults
+        })
       },
       onError: (error) => {
         console.error("Chat error:", error)
@@ -240,13 +247,14 @@ export function FlightSearch() {
       </div>
 
       <div className="flex-1 overflow-auto">
-        {showResults && (
+        {searchResults.map((result, index) => (
           <SearchResults
-            results={searchMutation.data}
+            key={index}
+            results={result}
             onFilterClick={handleFilterClick}
             isLoading={searchMutation.isPending}
           />
-        )}
+        ))}
       </div>
 
       <AIPrompt className="flex-none" onMessage={handleChatMessage} />
