@@ -80,3 +80,42 @@ The user requested to make the passengers and bags counters clickable to open a 
 
 ## 2024-03-19 15:04:00
 search form date input should open datepicker
+
+## 2024-03-19: Refactor Search Callbacks
+```refactor callbacks from:
+const onSubmit = (formData: SearchFormData) => {
+    const searchState: SearchState = {
+      sessionId,
+      formData,
+      messages,
+      trigger: "search",
+    }
+
+    searchMutation.mutate(searchState, {
+      onSuccess: (data) => {
+        console.log("[FlightSearch:onSuccess]", data)
+        if (data.formUpdates) {
+          Object.entries(data.formUpdates).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              setValue(key as keyof SearchFormData, value as string)
+            }
+          })
+          trigger()
+        }
+
+        if (data.messages && data.messages.length > 0) {
+          console.log("[FlightSearch:onSuccess:messages]", data.messages)
+          setMessages(data.messages)
+        }
+      },
+      onError: (error) => {
+        console.error("Search error:", error)
+        toast({
+          variant: "destructive",
+          title: "Search failed",
+          description: "Failed to search for flights. Please try again.",
+        })
+      },
+    })
+  }
+out so we can reuse them in all searchMutation.mutate calls

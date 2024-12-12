@@ -358,3 +358,19 @@ MANUAL: Disable eslint rules
   - Added proper date constraints between departure and return dates
   - Added validation to clear return date if it's before new departure date
   - Improved date display format in the search form
+
+## Fixed Filter Message Handling (2024-03-19)
+- Fixed issue with filter clicks not updating messages on FE
+- Removed premature message state updates
+- Made message handling consistent between search and chat operations
+- Ensured messages are only updated after successful API response
+- Removed unnecessary console.log statements
+- Added proper error handling for chat operations
+- Maintained form update functionality for both search and chat
+
+## Refactored Search Callbacks (2024-03-19)
+- Extracted reusable success and error handlers from searchMutation.mutate calls
+- Created handleSearchSuccess and handleSearchError functions
+- Updated both onSubmit and handleChatMessage to use the new handlers
+- Improved code organization and reduced duplication
+- Maintained consistent error handling and form updates across all search operations

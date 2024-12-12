@@ -53,6 +53,32 @@ export function FlightSearch() {
 
   const searchMutation = useSearchFlights()
 
+  const handleSearchSuccess = (data: any) => {
+    console.log("[FlightSearch:onSuccess]", data)
+    if (data.formUpdates) {
+      Object.entries(data.formUpdates).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          setValue(key as keyof SearchFormData, value as string)
+        }
+      })
+      trigger()
+    }
+
+    if (data.messages && data.messages.length > 0) {
+      console.log("[FlightSearch:onSuccess:messages]", data.messages)
+      setMessages(data.messages)
+    }
+  }
+
+  const handleSearchError = (error: Error) => {
+    console.error("Search error:", error)
+    toast({
+      variant: "destructive",
+      title: "Search failed",
+      description: "Failed to search for flights. Please try again.",
+    })
+  }
+
   const onSubmit = (formData: SearchFormData) => {
     const searchState: SearchState = {
       sessionId,
@@ -62,28 +88,8 @@ export function FlightSearch() {
     }
 
     searchMutation.mutate(searchState, {
-      onSuccess: (data) => {
-        if (data.formUpdates) {
-          Object.entries(data.formUpdates).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-              setValue(key as keyof SearchFormData, value as string)
-            }
-          })
-          trigger()
-        }
-
-        if (data.messages && data.messages.length > 0) {
-          setMessages(data.messages)
-        }
-      },
-      onError: (error) => {
-        console.error("Search error:", error)
-        toast({
-          variant: "destructive",
-          title: "Search failed",
-          description: "Failed to search for flights. Please try again.",
-        })
-      },
+      onSuccess: handleSearchSuccess,
+      onError: handleSearchError,
     })
   }
 
@@ -107,7 +113,10 @@ export function FlightSearch() {
       trigger: "chat",
     }
 
-    searchMutation.mutate(searchState)
+    searchMutation.mutate(searchState, {
+      onSuccess: handleSearchSuccess,
+      onError: handleSearchError,
+    })
   }
 
   const departurePlace = watch("departurePlace")
