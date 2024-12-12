@@ -33,7 +33,6 @@ const defaultFormValues: SearchFormData = {
 
 export function FlightSearch() {
   const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [searchResults, setSearchResults] = useState<Array<typeof searchMutation.data>>([])
   const { toast } = useToast()
   const sessionId = "test123" // In production, this should be generated uniquely
 
@@ -68,13 +67,6 @@ export function FlightSearch() {
 
     searchMutation.mutate(searchState, {
       onSuccess: (data) => {
-        if (data.message) {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: data.message },
-          ])
-        }
-
         // Update form values if formUpdates are present
         if (data.formUpdates) {
           Object.entries(data.formUpdates).forEach(([key, value]) => {
@@ -86,7 +78,13 @@ export function FlightSearch() {
           trigger()
         }
 
-        setSearchResults(prev => [...prev, data])
+        // Append only the new assistant message
+        if (data.messages && data.messages.length > 0) {
+          const newAssistantMessage = data.messages[data.messages.length - 1]
+          if (newAssistantMessage.role === "assistant") {
+            setMessages(prev => [...prev, newAssistantMessage])
+          }
+        }
       },
       onError: (error) => {
         console.error("Search error:", error)
@@ -104,7 +102,9 @@ export function FlightSearch() {
       role: "user",
       content: message,
     }
-    setMessages((prev) => [...prev, newMessage])
+
+    // Add the user message immediately to the chat
+    setMessages(prev => [...prev, newMessage])
 
     const searchState: SearchState = {
       sessionId,
@@ -114,19 +114,12 @@ export function FlightSearch() {
         departureDate: watch("departureDate"),
         returnDate: watch("returnDate"),
       },
-      messages: [...messages, newMessage],
+      messages: [...messages, newMessage], // Include the new message in the API call
       trigger: "chat",
     }
 
     searchMutation.mutate(searchState, {
       onSuccess: (data) => {
-        if (data.message) {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: data.message },
-          ])
-        }
-
         // Update form values if formUpdates are present
         if (data.formUpdates) {
           Object.entries(data.formUpdates).forEach(([key, value]) => {
@@ -138,14 +131,13 @@ export function FlightSearch() {
           trigger()
         }
 
-        // Update the last result set instead of adding a new one
-        setSearchResults(prev => {
-          const newResults = [...prev]
-          if (newResults.length > 0) {
-            newResults[newResults.length - 1] = data
+        // Append only the new assistant message
+        if (data.messages && data.messages.length > 0) {
+          const newAssistantMessage = data.messages[data.messages.length - 1]
+          if (newAssistantMessage.role === "assistant") {
+            setMessages(prev => [...prev, newAssistantMessage])
           }
-          return newResults
-        })
+        }
       },
       onError: (error) => {
         console.error("Chat error:", error)
@@ -247,14 +239,11 @@ export function FlightSearch() {
       </div>
 
       <div className="flex-1 overflow-auto">
-        {searchResults.map((result, index) => (
-          <SearchResults
-            key={index}
-            results={result}
-            onFilterClick={handleFilterClick}
-            isLoading={searchMutation.isPending}
-          />
-        ))}
+        <SearchResults
+          results={messages.length > 0 ? { messages, formUpdates: searchMutation.data?.formUpdates } : null}
+          onFilterClick={handleFilterClick}
+          isLoading={searchMutation.isPending}
+        />
       </div>
 
       <AIPrompt className="flex-none" onMessage={handleChatMessage} />
