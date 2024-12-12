@@ -307,3 +307,43 @@ MANUAL: Disable eslint rules
   - Improved user experience with immediate feedback
   - Ensured conversation continuity
   - Proper handling of both user and assistant messages
+
+## Design Update to Match Screenshot
+- Updated color scheme in globals.css:
+  - Set primary color to teal (HSL: 168 100% 33%)
+  - Adjusted border colors and radius
+  - Updated text colors and muted states
+- Enhanced button component:
+  - Increased padding and height
+  - Added shadow
+  - Rounded corners (lg)
+- Improved badge/chip component:
+  - Added close button functionality
+  - Set specific colors for Madrid (teal) and Dublin (orange)
+  - Adjusted padding and text size
+  - Rounded corners (lg)
+
+## Search Form Redesign
+- Completely redesigned search form to match screenshot:
+  - Added trip type selector (Return/One-way)
+  - Added passengers and bags counter with dividers
+  - Replaced input fields with location badges
+  - Added "Add more" text for locations
+  - Updated date display to show range
+  - Improved typography with larger headings
+  - Added subtle shadows and rounded corners
+  - Made all elements full-width
+  - Added proper spacing between sections
+
+## Added Passenger and Bags Selector Popup
+- Created new PassengerSelector component:
+  - Added popover for editing passengers and bags
+  - Added increment/decrement buttons with proper limits
+  - Added descriptive labels and helper text
+  - Added proper spacing and layout
+  - Maintained consistent styling with the rest of the UI
+- Updated FlightSearch component:
+  - Integrated PassengerSelector component
+  - Maintained proper state management
+  - Added proper button styling and hover states
+  - Ensured proper accessibility
